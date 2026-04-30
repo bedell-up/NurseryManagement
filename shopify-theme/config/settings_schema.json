@@ -1,0 +1,64 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "Bloomsday Natives",
+    "theme_version": "1.0.0",
+    "theme_author": "Bloomsday Natives",
+    "theme_documentation_url": "https://bloomsday-natives.myshopify.com",
+    "theme_support_url": "https://bloomsday-natives.myshopify.com"
+  },
+  {
+    "name": "General",
+    "settings": [
+      {
+        "type": "image_picker",
+        "id": "favicon",
+        "label": "Favicon"
+      }
+    ]
+  },
+  {
+    "name": "Colors",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Brand Colors"
+      },
+      {
+        "type": "color",
+        "id": "color_primary",
+        "label": "Primary green",
+        "default": "#2C5F2E"
+      },
+      {
+        "type": "color",
+        "id": "color_cream",
+        "label": "Background cream",
+        "default": "#F5EFE6"
+      },
+      {
+        "type": "color",
+        "id": "color_earth",
+        "label": "Earth accent",
+        "default": "#8C6D46"
+      }
+    ]
+  },
+  {
+    "name": "Typography",
+    "settings": [
+      {
+        "type": "font_picker",
+        "id": "font_heading",
+        "label": "Heading font",
+        "default": "playfair_display_n4"
+      },
+      {
+        "type": "font_picker",
+        "id": "font_body",
+        "label": "Body font",
+        "default": "inter_n4"
+      }
+    ]
+  }
+]

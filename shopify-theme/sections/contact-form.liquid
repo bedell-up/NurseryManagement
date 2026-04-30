@@ -1,0 +1,102 @@
+<section class="section contact-form-section">
+  <div class="page-width">
+    <div class="contact-form-layout">
+
+      <div class="contact-form-info">
+        {%- if section.settings.eyebrow != blank -%}
+          <span class="section-eyebrow">{{ section.settings.eyebrow }}</span>
+        {%- endif -%}
+        {%- if section.settings.title != blank -%}
+          <h2 class="contact-form-info__title">{{ section.settings.title }}</h2>
+        {%- endif -%}
+        {%- if section.settings.text != blank -%}
+          <div class="contact-form-info__text rte">{{ section.settings.text }}</div>
+        {%- endif -%}
+        <div class="contact-form-info__details">
+          {%- if section.settings.email != blank -%}
+            <a href="mailto:{{ section.settings.email }}">{{ section.settings.email }}</a>
+          {%- endif -%}
+          {%- if section.settings.phone != blank -%}
+            <a href="tel:{{ section.settings.phone | remove: '-' | remove: ' ' }}">{{ section.settings.phone }}</a>
+          {%- endif -%}
+          {%- if section.settings.address != blank -%}
+            <span>{{ section.settings.address }}</span>
+          {%- endif -%}
+        </div>
+      </div>
+
+      <div class="contact-form-wrap">
+        {%- form 'contact', id: 'ContactForm' -%}
+          {%- if form.posted_successfully? -%}
+            <p class="form-success">Thanks for reaching out — we'll be in touch soon.</p>
+          {%- endif -%}
+          {%- if form.errors -%}
+            <p class="form-error">{{ form.errors | default_errors }}</p>
+          {%- endif -%}
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="ContactName">Name</label>
+              <input type="text" id="ContactName" name="contact[name]"
+                     value="{{ form.name }}" required autocomplete="name">
+            </div>
+            <div class="form-field">
+              <label for="ContactEmail">Email</label>
+              <input type="email" id="ContactEmail" name="contact[email]"
+                     value="{{ form.email }}" required autocomplete="email">
+            </div>
+          </div>
+
+          {%- if section.settings.show_phone -%}
+            <div class="form-field">
+              <label for="ContactPhone">Phone (optional)</label>
+              <input type="tel" id="ContactPhone" name="contact[phone]" autocomplete="tel">
+            </div>
+          {%- endif -%}
+
+          {%- if section.settings.show_subject -%}
+            <div class="form-field">
+              <label for="ContactSubject">Subject</label>
+              <select id="ContactSubject" name="contact[subject]">
+                <option value="">Select a topic…</option>
+                <option value="Landscape Design">Landscape Design & Build</option>
+                <option value="Installation">Installation</option>
+                <option value="Plant Order">Plant Order / Contract Growing</option>
+                <option value="Ecological Consulting">Ecological Consulting</option>
+                <option value="General">General Inquiry</option>
+              </select>
+            </div>
+          {%- endif -%}
+
+          <div class="form-field">
+            <label for="ContactMessage">Message</label>
+            <textarea id="ContactMessage" name="contact[body]" rows="6" required>{{ form.body }}</textarea>
+          </div>
+
+          <button type="submit" class="btn btn--primary btn--full">
+            {{ section.settings.btn_label | default: 'Send Message' }}
+          </button>
+        {%- endform -%}
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Contact Form",
+  "settings": [
+    { "type": "text",     "id": "eyebrow", "label": "Eyebrow",   "default": "Get in touch" },
+    { "type": "text",     "id": "title",   "label": "Title",     "default": "Inquire Now" },
+    { "type": "richtext", "id": "text",    "label": "Description" },
+    { "type": "text",     "id": "email",   "label": "Email",     "default": "info@bloomsdaynatives.com" },
+    { "type": "text",     "id": "phone",   "label": "Phone",     "default": "503-607-4719" },
+    { "type": "text",     "id": "address", "label": "Address" },
+    { "type": "text",     "id": "btn_label",    "label": "Button text",      "default": "Send Message" },
+    { "type": "checkbox", "id": "show_phone",   "label": "Show phone field", "default": true },
+    { "type": "checkbox", "id": "show_subject", "label": "Show subject dropdown", "default": true }
+  ],
+  "presets": [{ "name": "Contact Form" }]
+}
+{% endschema %}

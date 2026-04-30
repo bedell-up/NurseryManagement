@@ -1,0 +1,53 @@
+<section class="section featured-collection{% if section.settings.alt_bg %} featured-collection--alt{% endif %}">
+  <div class="page-width">
+
+    <div class="collection-header">
+      <div class="section-header section-header--left">
+        {%- if section.settings.eyebrow != blank -%}
+          <span class="section-eyebrow">{{ section.settings.eyebrow }}</span>
+        {%- endif -%}
+        <h2 class="section-title">{{ section.settings.title }}</h2>
+        {%- if section.settings.description != blank -%}
+          <p class="section-subtitle">{{ section.settings.description }}</p>
+        {%- endif -%}
+      </div>
+
+      {%- if section.settings.view_all_label != blank and section.settings.collection != blank -%}
+        <a href="{{ collections[section.settings.collection].url }}"
+           class="btn btn--outline">
+          {{ section.settings.view_all_label }}
+        </a>
+      {%- endif -%}
+    </div>
+
+    {%- assign featured = collections[section.settings.collection] -%}
+    {%- if featured != blank and featured.products_count > 0 -%}
+      <div class="products-grid">
+        {%- for product in featured.products limit: section.settings.products_to_show -%}
+          {%- render 'product-card', product: product -%}
+        {%- endfor -%}
+      </div>
+    {%- else -%}
+      <p style="color:var(--color-text-muted);text-align:center;padding:3rem 0;">
+        No products found. Select a collection above.
+      </p>
+    {%- endif -%}
+
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Featured Collection",
+  "settings": [
+    { "type": "text",       "id": "eyebrow",          "label": "Eyebrow",         "default": "From the nursery" },
+    { "type": "text",       "id": "title",            "label": "Section title",   "default": "Available Now" },
+    { "type": "textarea",   "id": "description",      "label": "Description" },
+    { "type": "collection", "id": "collection",       "label": "Collection" },
+    { "type": "range",      "id": "products_to_show", "label": "Products to show","min": 2, "max": 16, "step": 2, "default": 8 },
+    { "type": "text",       "id": "view_all_label",   "label": "View all button", "default": "View All" },
+    { "type": "checkbox",   "id": "alt_bg",           "label": "Alternate background (white)", "default": false }
+  ],
+  "presets": [{ "name": "Featured Collection" }]
+}
+{% endschema %}

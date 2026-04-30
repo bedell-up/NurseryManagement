@@ -1,0 +1,261 @@
+{%- liquid
+  assign current_variant = product.selected_or_first_available_variant
+  assign product_type    = product.type | downcase | strip
+  assign tags_str        = product.tags | join: ',' | downcase
+
+  assign sun_value    = ''
+  assign water_value  = ''
+  assign region_value = ''
+  assign height_value = ''
+
+  for tag in product.tags
+    if tag contains 'sun:'
+      assign sun_value = tag | remove: 'sun:' | strip
+    endif
+    if tag contains 'water:'
+      assign water_value = tag | remove: 'water:' | strip
+    endif
+    if tag contains 'region:'
+      assign region_value = tag | remove: 'region:' | strip
+    endif
+    if tag contains 'height:'
+      assign height_value = tag | remove: 'height:' | strip
+    endif
+  endfor
+-%}
+
+<div class="product-page">
+  <div class="page-width">
+
+    <!-- Breadcrumb -->
+    <nav class="product-breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span>/</span>
+      {%- if collection -%}
+        <a href="{{ collection.url }}">{{ collection.title }}</a>
+        <span>/</span>
+      {%- endif -%}
+      <span>{{ product.title }}</span>
+    </nav>
+
+    <div class="product-layout">
+
+      <!-- Gallery -->
+      <div class="product-gallery" id="product-gallery">
+        <div class="product-main-image" id="product-main-image">
+          {%- if product.featured_image -%}
+            <img src="{{ product.featured_image | image_url: width: 900 }}"
+                 alt="{{ product.featured_image.alt | default: product.title | escape }}"
+                 width="900" height="900"
+                 loading="eager"
+                 fetchpriority="high">
+          {%- else -%}
+            <div class="product-main-image--placeholder">🌿</div>
+          {%- endif -%}
+        </div>
+
+        {%- if product.images.size > 1 -%}
+          <div class="product-thumbnails">
+            {%- for image in product.images -%}
+              <button class="product-thumbnail {% if forloop.first %}active{% endif %}"
+                      data-src="{{ image | image_url: width: 900 }}"
+                      data-alt="{{ image.alt | escape }}"
+                      aria-label="View image {{ forloop.index }}">
+                <img src="{{ image | image_url: width: 144 }}"
+                     alt="{{ image.alt | escape }}"
+                     width="72" height="72"
+                     loading="lazy">
+              </button>
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+      </div>
+
+      <!-- Product Info -->
+      <div class="product-info">
+
+        {%- if product_type != blank -%}
+          <span class="product-type-badge">{{ product.type }}</span>
+        {%- endif -%}
+
+        <h1 class="product-title" itemprop="name">{{ product.title }}</h1>
+
+        {%- for tag in product.tags -%}
+          {%- if tag contains 'sci:' -%}
+            <p class="product-scientific">{{ tag | remove: 'sci:' | strip }}</p>
+            {%- break -%}
+          {%- endif -%}
+        {%- endfor -%}
+
+        <!-- Price -->
+        <div class="product-price-wrap">
+          <span id="product-price"
+                class="product-price{% if current_variant.compare_at_price > current_variant.price %} product-price--sale{% endif %}">
+            {{ current_variant.price | money }}
+          </span>
+          {%- if current_variant.compare_at_price > current_variant.price -%}
+            <span id="product-compare-price" class="product-price--compare">
+              {{ current_variant.compare_at_price | money }}
+            </span>
+          {%- else -%}
+            <span id="product-compare-price" style="display:none"></span>
+          {%- endif -%}
+        </div>
+
+        <!-- Plant Care Info -->
+        {%- if sun_value != blank or water_value != blank or region_value != blank or height_value != blank -%}
+          <div class="plant-care">
+            {%- if sun_value != blank -%}
+              <div class="plant-care__item">
+                <span class="plant-care__icon">
+                  {%- if sun_value contains 'full sun' -%}☀️
+                  {%- elsif sun_value contains 'shade' -%}🌥️
+                  {%- else -%}⛅{%- endif -%}
+                </span>
+                <span class="plant-care__label">Sun</span>
+                <span class="plant-care__value">{{ sun_value }}</span>
+              </div>
+            {%- endif -%}
+            {%- if water_value != blank -%}
+              <div class="plant-care__item">
+                <span class="plant-care__icon">
+                  {%- if water_value contains 'wet' -%}💧💧
+                  {%- elsif water_value contains 'dry' -%}🌵
+                  {%- else -%}💧{%- endif -%}
+                </span>
+                <span class="plant-care__label">Water</span>
+                <span class="plant-care__value">{{ water_value }}</span>
+              </div>
+            {%- endif -%}
+            {%- if height_value != blank -%}
+              <div class="plant-care__item">
+                <span class="plant-care__icon">📏</span>
+                <span class="plant-care__label">Height</span>
+                <span class="plant-care__value">{{ height_value }}</span>
+              </div>
+            {%- endif -%}
+            {%- if region_value != blank -%}
+              <div class="plant-care__item">
+                <span class="plant-care__icon">🗺️</span>
+                <span class="plant-care__label">Region</span>
+                <span class="plant-care__value">{{ region_value }}</span>
+              </div>
+            {%- endif -%}
+            {%- if tags_str contains 'pollinator' -%}
+              <div class="plant-care__item">
+                <span class="plant-care__icon">🐝</span>
+                <span class="plant-care__label">Wildlife</span>
+                <span class="plant-care__value">Pollinators</span>
+              </div>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+
+        <!-- Product Form -->
+        <form id="product-form" action="/cart/add" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="id" value="{{ current_variant.id }}">
+
+          {%- unless product.has_only_default_variant -%}
+            {%- for option in product.options_with_values -%}
+              <div>
+                <span class="variant-label">
+                  {{ option.name }}
+                  <span id="selected-{{ option.position }}">{{ current_variant.options[forloop.index0] }}</span>
+                </span>
+                <div class="variant-options" data-option-name="{{ option.name }}">
+                  {%- for value in option.values -%}
+                    {%- liquid
+                      assign is_active = false
+                      if value == current_variant.options[forloop.parentloop.index0]
+                        assign is_active = true
+                      endif
+                    -%}
+                    <button type="button"
+                            class="variant-btn{% if is_active %} active{% endif %}"
+                            data-option-value="{{ value }}">
+                      {{ value }}
+                    </button>
+                  {%- endfor -%}
+                </div>
+              </div>
+            {%- endfor -%}
+          {%- endunless -%}
+
+          <!-- Quantity -->
+          <div class="quantity-wrap">
+            <span class="quantity-label">Qty</span>
+            <div class="quantity-selector" data-quantity-wrap>
+              <button type="button" class="quantity-btn" data-quantity-btn="minus" aria-label="Decrease">−</button>
+              <input type="number"
+                     name="quantity"
+                     value="1"
+                     min="1"
+                     max="99"
+                     class="quantity-input"
+                     aria-label="Quantity">
+              <button type="button" class="quantity-btn" data-quantity-btn="plus" aria-label="Increase">+</button>
+            </div>
+          </div>
+
+          <!-- Availability status -->
+          <p id="product-availability" class="availability--in-stock" style="font-size:0.875rem;margin-bottom:0.875rem;font-weight:500;">
+            {%- if current_variant.available -%}In stock{%- else -%}Sold out{%- endif -%}
+          </p>
+
+          <div class="add-to-cart-wrap">
+            <button type="submit"
+                    class="btn--add-to-cart"
+                    {% unless current_variant.available %}disabled{% endunless %}>
+              {%- if current_variant.available -%}Add to Cart{%- else -%}Sold Out{%- endif -%}
+            </button>
+          </div>
+        </form>
+
+        <!-- Meta -->
+        <div class="product-meta">
+          {%- if product.vendor != blank -%}
+            <div class="product-meta-row">
+              <strong>Grower</strong>
+              <span>{{ product.vendor }}</span>
+            </div>
+          {%- endif -%}
+          {%- if product.type != blank -%}
+            <div class="product-meta-row">
+              <strong>Type</strong>
+              <span>{{ product.type }}</span>
+            </div>
+          {%- endif -%}
+          {%- for tag in product.tags -%}
+            {%- if tag contains 'sci:' -%}
+              <div class="product-meta-row">
+                <strong>Scientific</strong>
+                <span><em>{{ tag | remove: 'sci:' | strip }}</em></span>
+              </div>
+              {%- break -%}
+            {%- endif -%}
+          {%- endfor -%}
+          <div class="product-meta-row">
+            <strong>SKU</strong>
+            <span>{{ current_variant.sku | default: '—' }}</span>
+          </div>
+        </div>
+
+        <!-- Description -->
+        {%- if product.description != blank -%}
+          <div class="product-description">
+            <h3>About this plant</h3>
+            <div class="rte">{{ product.description }}</div>
+          </div>
+        {%- endif -%}
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Product",
+  "settings": []
+}
+{% endschema %}

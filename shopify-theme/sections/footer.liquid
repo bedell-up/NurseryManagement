@@ -1,0 +1,146 @@
+<footer class="site-footer" role="contentinfo">
+  <div class="page-width">
+    <div class="footer-grid">
+
+      <!-- Brand -->
+      <div class="footer-brand">
+        <div class="footer-logo">{{ shop.name }}</div>
+        <p>{{ section.settings.tagline | default: 'Ecological landscape design and native plant nursery, rooted in Portland, OR.' }}</p>
+        {%- if section.settings.email != blank -%}
+          <p style="font-size:0.875rem;margin-top:0.5rem;">
+            <a href="mailto:{{ section.settings.email }}" style="color:var(--color-sage-light);">
+              {{ section.settings.email }}
+            </a>
+          </p>
+        {%- endif -%}
+        {%- if section.settings.phone != blank -%}
+          <p style="font-size:0.875rem;margin-top:0.25rem;">
+            <a href="tel:{{ section.settings.phone | remove: '-' | prepend: '+1' }}" style="color:var(--color-sage-light);">
+              {{ section.settings.phone }}
+            </a>
+          </p>
+        {%- endif -%}
+        {%- if section.settings.address != blank -%}
+          <p style="font-size:0.8125rem;margin-top:0.5rem;color:rgba(245,239,230,0.55);line-height:1.5;">{{ section.settings.address }}</p>
+        {%- endif -%}
+        {%- if section.settings.hours != blank -%}
+          <p style="font-size:0.8125rem;margin-top:0.25rem;color:rgba(245,239,230,0.55);">{{ section.settings.hours }}</p>
+        {%- endif -%}
+      </div>
+
+      <!-- Shop links -->
+      <div>
+        <p class="footer-col-title">Shop</p>
+        <ul class="footer-links">
+          {%- for link in linklists[section.settings.shop_menu].links -%}
+            <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+          {%- endfor -%}
+        </ul>
+      </div>
+
+      <!-- Info links -->
+      <div>
+        <p class="footer-col-title">Info</p>
+        <ul class="footer-links">
+          {%- for link in linklists[section.settings.info_menu].links -%}
+            <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+          {%- endfor -%}
+        </ul>
+      </div>
+
+      <!-- Community Partners -->
+      <div>
+        <p class="footer-col-title">Community Partners</p>
+        <ul class="footer-links">
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'partner' -%}
+              <li {{ block.shopify_attributes }}>
+                {%- if block.settings.url != blank -%}
+                  <a href="{{ block.settings.url }}">{{ block.settings.name }}</a>
+                {%- else -%}
+                  {{ block.settings.name }}
+                {%- endif -%}
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Pickup Locations row -->
+    {%- assign has_locations = false -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'location' -%}{%- assign has_locations = true -%}{%- endif -%}
+    {%- endfor -%}
+    {%- if has_locations -%}
+    <div style="padding:1.5rem 0;border-top:1px solid rgba(255,255,255,0.08);">
+      <p class="footer-col-title" style="margin-bottom:0.625rem;">Pickup Locations</p>
+      <div style="display:flex;flex-wrap:wrap;gap:1.25rem 2rem;">
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'location' -%}
+            <span style="font-size:0.875rem;color:rgba(245,239,230,0.6);" {{ block.shopify_attributes }}>{{ block.settings.name }}</span>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    </div>
+    {%- endif -%}
+
+    <div class="footer-bottom">
+      <span>© {{ 'now' | date: '%Y' }} {{ shop.name }}. All rights reserved.</span>
+      <div style="display:flex;gap:1.25rem;">
+        <a href="/policies/privacy-policy">Privacy</a>
+        <a href="/policies/refund-policy">Returns</a>
+        <a href="/policies/shipping-policy">Shipping</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    { "type": "text",      "id": "tagline",   "label": "Brand tagline" },
+    { "type": "text",      "id": "email",     "label": "Contact email",   "default": "info@bloomsdaynatives.com" },
+    { "type": "text",      "id": "phone",     "label": "Phone number",    "default": "503-607-4719" },
+    { "type": "text",      "id": "address",   "label": "Address",         "default": "8012 SE 13th St. Portland, OR" },
+    { "type": "text",      "id": "hours",     "label": "Hours",           "default": "Mon–Sun 11am–5pm @ Plural Collective" },
+    { "type": "link_list", "id": "shop_menu", "label": "Shop links menu",  "default": "footer" },
+    { "type": "link_list", "id": "info_menu", "label": "Info links menu",  "default": "footer" }
+  ],
+  "blocks": [
+    {
+      "type": "partner",
+      "name": "Community Partner",
+      "settings": [
+        { "type": "text", "id": "name", "label": "Partner name", "default": "Partner" },
+        { "type": "url",  "id": "url",  "label": "Partner URL" }
+      ]
+    },
+    {
+      "type": "location",
+      "name": "Pickup Location",
+      "settings": [
+        { "type": "text", "id": "name", "label": "Location name", "default": "Partner Location" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Footer",
+      "blocks": [
+        { "type": "partner",  "settings": { "name": "Backyard Habitat" } },
+        { "type": "partner",  "settings": { "name": "Wapato Island Farm" } },
+        { "type": "partner",  "settings": { "name": "NAYA PDX" } },
+        { "type": "partner",  "settings": { "name": "Symbiop" } },
+        { "type": "partner",  "settings": { "name": "Poppy and Finch" } },
+        { "type": "partner",  "settings": { "name": "Prismid Sanctuary" } },
+        { "type": "partner",  "settings": { "name": "Tree Dogs PDX" } },
+        { "type": "partner",  "settings": { "name": "Portland Native Plant Society" } },
+        { "type": "location", "settings": { "name": "Plural Collective — 8012 SE 13th St" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

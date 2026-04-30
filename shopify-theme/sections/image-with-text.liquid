@@ -1,0 +1,49 @@
+<section class="section image-with-text">
+  <div class="page-width">
+    <div class="image-with-text__grid{% if section.settings.image_position == 'right' %} image-with-text__grid--reversed{% endif %}">
+
+      <div class="image-with-text__media">
+        {%- if section.settings.image != blank -%}
+          <img src="{{ section.settings.image | image_url: width: 900 }}"
+               alt="{{ section.settings.image.alt | escape }}"
+               width="900" height="720"
+               loading="lazy">
+        {%- else -%}
+          <div style="width:100%;height:100%;min-height:400px;background:var(--color-cream-dark);display:flex;align-items:center;justify-content:center;font-size:5rem;border-radius:var(--radius-lg);">🌿</div>
+        {%- endif -%}
+      </div>
+
+      <div class="image-with-text__content">
+        {%- if section.settings.eyebrow != blank -%}
+          <span class="section-eyebrow">{{ section.settings.eyebrow }}</span>
+        {%- endif -%}
+        <h2 class="image-with-text__title">{{ section.settings.heading }}</h2>
+        <p class="image-with-text__text">{{ section.settings.text }}</p>
+        {%- if section.settings.btn_label != blank -%}
+          <a href="{{ section.settings.btn_url | default: '/' }}"
+             class="btn btn--primary">
+            {{ section.settings.btn_label }}
+          </a>
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Image with Text",
+  "settings": [
+    { "type": "image_picker", "id": "image",          "label": "Image" },
+    { "type": "select",       "id": "image_position", "label": "Image position",
+      "options": [{ "value": "left", "label": "Left" }, { "value": "right", "label": "Right" }],
+      "default": "left" },
+    { "type": "text",     "id": "eyebrow",   "label": "Eyebrow" },
+    { "type": "text",     "id": "heading",   "label": "Heading",     "default": "Grown with Intention" },
+    { "type": "textarea", "id": "text",      "label": "Text",        "default": "Every plant we grow is selected for its ecological value and beauty. Our nursery is committed to supporting native pollinators, birds, and the broader web of life that depends on these plants." },
+    { "type": "text",     "id": "btn_label", "label": "Button text" },
+    { "type": "url",      "id": "btn_url",   "label": "Button link" }
+  ],
+  "presets": [{ "name": "Image with Text" }]
+}
+{% endschema %}

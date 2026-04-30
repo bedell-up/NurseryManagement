@@ -1,0 +1,14 @@
+{
+  "sections": {
+    "main": {
+      "type": "rich-text",
+      "settings": {
+        "title": "Page Not Found",
+        "text": "<p>The page you're looking for has wandered off into the forest. Try browsing our plants instead.</p>",
+        "btn_label": "Browse Plants",
+        "btn_url": "/collections/all"
+      }
+    }
+  },
+  "order": ["main"]
+}

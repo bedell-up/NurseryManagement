@@ -1,0 +1,123 @@
+<div class="collection-page">
+
+  <!-- Collection Hero -->
+  <div class="collection-hero">
+    <div class="page-width">
+      <h1 class="collection-hero__title">{{ collection.title }}</h1>
+      {%- if collection.description != blank -%}
+        <p class="collection-hero__description">{{ collection.description }}</p>
+      {%- endif -%}
+    </div>
+  </div>
+
+  <div class="page-width collection-layout">
+
+    <!-- Search -->
+    <div class="collection-search">
+      <div class="collection-search__wrap">
+        <svg class="collection-search__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input id="collection-search-input"
+               type="search"
+               class="collection-search__input"
+               placeholder="Search plants…"
+               aria-label="Search plants"
+               autocomplete="off"
+               spellcheck="false">
+        <button id="collection-search-clear"
+                class="collection-search__clear"
+                aria-label="Clear search"
+                hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="collection-toolbar">
+
+      <!-- Type filters (client-side) -->
+      <div class="filter-bar" role="group" aria-label="Filter by type">
+        <button class="filter-btn active" data-filter="all">All</button>
+        {%- assign types = '' -%}
+        {%- for product in collection.products -%}
+          {%- if product.type != blank -%}
+            {%- unless types contains product.type -%}
+              {%- assign types = types | append: product.type | append: '|' -%}
+            {%- endunless -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {%- assign type_arr = types | split: '|' | uniq -%}
+        {%- for type in type_arr -%}
+          {%- if type != blank -%}
+            <button class="filter-btn" data-filter="{{ type | downcase }}">{{ type }}</button>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <span class="collection-count">
+          {{ collection.products_count }} plant{{ collection.products_count | pluralize: '', 's' }}
+        </span>
+        <div class="collection-sort">
+          <select id="collection-sort" aria-label="Sort by">
+            <option value="title-ascending"{% if collection.sort_by == 'title-ascending' %} selected{% endif %}>Name A–Z</option>
+            <option value="title-descending"{% if collection.sort_by == 'title-descending' %} selected{% endif %}>Name Z–A</option>
+            <option value="price-ascending"{% if collection.sort_by == 'price-ascending' %} selected{% endif %}>Price: Low to High</option>
+            <option value="price-descending"{% if collection.sort_by == 'price-descending' %} selected{% endif %}>Price: High to Low</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product Grid -->
+    {%- if collection.products.size > 0 -%}
+      <div class="products-grid">
+        {%- paginate collection.products by 48 -%}
+          {%- for product in collection.products -%}
+            {%- render 'product-card', product: product -%}
+          {%- endfor -%}
+
+          {%- if paginate.pages > 1 -%}
+            <div style="grid-column:1/-1;display:flex;justify-content:center;gap:0.5rem;padding-top:2rem;">
+              {%- if paginate.previous -%}
+                <a href="{{ paginate.previous.url }}" class="btn btn--outline btn--sm">← Previous</a>
+              {%- endif -%}
+              {%- for part in paginate.parts -%}
+                {%- if part.is_link -%}
+                  <a href="{{ part.url }}" class="btn btn--outline btn--sm">{{ part.title }}</a>
+                {%- else -%}
+                  <span class="btn btn--primary btn--sm">{{ part.title }}</span>
+                {%- endif -%}
+              {%- endfor -%}
+              {%- if paginate.next -%}
+                <a href="{{ paginate.next.url }}" class="btn btn--outline btn--sm">Next →</a>
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+        {%- endpaginate -%}
+      </div>
+    {%- else -%}
+      <div style="text-align:center;padding:5rem 1rem;">
+        <p style="font-size:3rem;margin-bottom:1rem;">🌱</p>
+        <h2 style="font-family:var(--font-heading);margin-bottom:0.5rem;">No plants here yet</h2>
+        <p style="color:var(--color-text-muted);">Check back soon — we're always growing.</p>
+      </div>
+    {%- endif -%}
+
+    <!-- Search empty state (hidden until JS shows it) -->
+    <div id="collection-no-results" style="display:none;text-align:center;padding:4rem 1rem;">
+      <p style="font-size:2.5rem;margin-bottom:1rem;">🔍</p>
+      <h3 style="font-family:var(--font-heading);margin-bottom:0.5rem;">No plants found</h3>
+      <p style="color:var(--color-text-muted);">Try a different name or clear your search.</p>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Collection",
+  "settings": []
+}
+{% endschema %}

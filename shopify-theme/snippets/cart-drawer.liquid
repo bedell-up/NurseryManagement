@@ -1,0 +1,51 @@
+<!-- Cart Drawer Overlay + Panel -->
+<div id="cart-drawer-overlay" class="cart-drawer-overlay" aria-hidden="true"></div>
+
+<div id="cart-drawer"
+     class="cart-drawer"
+     role="dialog"
+     aria-label="Shopping cart"
+     aria-modal="true"
+     aria-hidden="true">
+
+  <!-- Header -->
+  <div class="cart-drawer__header">
+    <h2 class="cart-drawer__title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 01-8 0"/>
+      </svg>
+      Your Cart
+      <span class="cart-drawer__count" id="drawer-item-count"></span>
+    </h2>
+    <button class="cart-drawer__close" id="cart-drawer-close" aria-label="Close cart">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Body (rendered by JS) -->
+  <div class="cart-drawer__body" id="cart-drawer-body">
+    <div class="cart-drawer__loading">
+      <div class="spinner" style="border-color:rgba(44,95,46,0.2);border-top-color:var(--color-primary);"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="cart-drawer__footer" id="cart-drawer-footer" style="display:none;">
+    <div class="cart-drawer__subtotal">
+      <span>Subtotal</span>
+      <span id="drawer-subtotal"></span>
+    </div>
+    <p class="cart-drawer__note">Shipping &amp; taxes calculated at checkout</p>
+    <a href="/checkout" class="btn btn--primary btn--full btn--lg" id="drawer-checkout-btn">
+      Checkout
+    </a>
+    <a href="/cart" class="btn btn--outline btn--full" style="margin-top:0.625rem;">
+      View Full Cart
+    </a>
+  </div>
+</div>

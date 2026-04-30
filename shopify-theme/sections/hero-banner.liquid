@@ -1,0 +1,58 @@
+<section class="hero section--flush">
+  {%- if section.settings.image != blank -%}
+    <img class="hero__bg"
+         src="{{ section.settings.image | image_url: width: 1920 }}"
+         alt="{{ section.settings.image.alt | default: shop.name }}"
+         width="1920" height="900"
+         loading="eager"
+         fetchpriority="high">
+  {%- endif -%}
+
+  <div class="hero__overlay"></div>
+
+  <div class="page-width">
+    <div class="hero__content">
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="hero__eyebrow">{{ section.settings.eyebrow }}</p>
+      {%- endif -%}
+
+      <h1 class="hero__heading">{{ section.settings.heading }}</h1>
+
+      {%- if section.settings.subheading != blank -%}
+        <p class="hero__subheading">{{ section.settings.subheading }}</p>
+      {%- endif -%}
+
+      <div class="hero__actions">
+        {%- if section.settings.btn_primary_label != blank -%}
+          <a href="{{ section.settings.btn_primary_url | default: '/collections/all' }}"
+             class="btn btn--primary btn--lg">
+            {{ section.settings.btn_primary_label }}
+          </a>
+        {%- endif -%}
+        {%- if section.settings.btn_secondary_label != blank -%}
+          <a href="{{ section.settings.btn_secondary_url | default: '/pages/about' }}"
+             class="btn btn--ghost btn--lg">
+            {{ section.settings.btn_secondary_label }}
+          </a>
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Hero Banner",
+  "settings": [
+    { "type": "image_picker", "id": "image",               "label": "Background image" },
+    { "type": "text",         "id": "eyebrow",             "label": "Eyebrow text",       "default": "Pacific Northwest Native Plants" },
+    { "type": "text",         "id": "heading",             "label": "Heading",            "default": "Grow Native. Grow Wild." },
+    { "type": "textarea",     "id": "subheading",          "label": "Subheading",         "default": "Beautiful, ecologically meaningful plants grown right here in the Pacific Northwest — for gardeners, landscapers, and everyone in between." },
+    { "type": "text",         "id": "btn_primary_label",   "label": "Primary button text","default": "Shop Plants" },
+    { "type": "url",          "id": "btn_primary_url",     "label": "Primary button link" },
+    { "type": "text",         "id": "btn_secondary_label", "label": "Secondary button text","default": "Our Story" },
+    { "type": "url",          "id": "btn_secondary_url",   "label": "Secondary button link" }
+  ],
+  "presets": [{ "name": "Hero Banner" }]
+}
+{% endschema %}

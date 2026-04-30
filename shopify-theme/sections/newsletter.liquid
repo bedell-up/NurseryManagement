@@ -1,0 +1,51 @@
+<section class="section newsletter-section">
+  <div class="page-width">
+    <div class="newsletter-inner">
+      {%- if section.settings.eyebrow != blank -%}
+        <span class="section-eyebrow">{{ section.settings.eyebrow }}</span>
+      {%- endif -%}
+      {%- if section.settings.title != blank -%}
+        <h2 class="section-title">{{ section.settings.title }}</h2>
+      {%- endif -%}
+      {%- if section.settings.description != blank -%}
+        <p class="section-subtitle">{{ section.settings.description }}</p>
+      {%- endif -%}
+
+      {%- form 'customer', id: 'newsletter-form-{{ section.id }}', class: 'newsletter-form' -%}
+        <input type="hidden" name="contact[tags]" value="newsletter">
+        {%- if form.posted_successfully? -%}
+          <p style="color:var(--color-sage-light);font-weight:500;">Thanks for subscribing!</p>
+        {%- else -%}
+          <input type="email"
+                 name="contact[email]"
+                 id="newsletter-email-{{ section.id }}"
+                 placeholder="{{ section.settings.placeholder | default: 'Your email address' }}"
+                 required
+                 autocomplete="email">
+          <button type="submit" class="btn btn--outline" style="border-color:rgba(255,255,255,0.6);color:var(--color-white);white-space:nowrap;">
+            {{ section.settings.btn_label | default: 'Subscribe' }}
+          </button>
+        {%- endif -%}
+      {%- endform -%}
+
+      {%- if section.settings.disclaimer != blank -%}
+        <p class="newsletter-disclaimer">{{ section.settings.disclaimer }}</p>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Newsletter",
+  "settings": [
+    { "type": "text",     "id": "eyebrow",     "label": "Eyebrow",     "default": "Stay connected" },
+    { "type": "text",     "id": "title",       "label": "Title",       "default": "Join Our Newsletter" },
+    { "type": "textarea", "id": "description", "label": "Description", "default": "Seasonal availability, planting tips, and project updates delivered to your inbox." },
+    { "type": "text",     "id": "placeholder", "label": "Input placeholder", "default": "Your email address" },
+    { "type": "text",     "id": "btn_label",   "label": "Button text",  "default": "Subscribe" },
+    { "type": "text",     "id": "disclaimer",  "label": "Disclaimer text (optional)" }
+  ],
+  "presets": [{ "name": "Newsletter" }]
+}
+{% endschema %}

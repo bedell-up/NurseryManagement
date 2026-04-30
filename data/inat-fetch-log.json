@@ -1,0 +1,32 @@
+{
+  "run_at": "2026-04-22T23:41:07.162Z",
+  "summary": {
+    "total": 4,
+    "updated": 0,
+    "skipped": 4,
+    "errors": 0
+  },
+  "not_found": [
+    {
+      "common_name": "Nodding Onion (major)",
+      "scientific_name": "Allium cernuum var.major",
+      "plant_id": "2dc90bb6-47fd-4798-9dcf-12ca1aa665fc"
+    },
+    {
+      "common_name": "Oregon Black Walnut",
+      "scientific_name": "Juglans hindsii x nigra",
+      "plant_id": "845d26bb-cea7-4064-8247-083aa41a33cd"
+    },
+    {
+      "common_name": "Marionberry",
+      "scientific_name": "Rubus Chehalem x Olallie",
+      "plant_id": "5f5bc963-3a22-46e7-ba20-fc914807a58f"
+    },
+    {
+      "common_name": "Shipova",
+      "scientific_name": "Sorbopyrus auricularis",
+      "plant_id": "2648702e-e9ef-4952-82df-3a789c4abfe5"
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,112 @@
+<header class="site-header" role="banner"
+        style="--header-bg: {{ section.settings.bg_color }}; --header-text: {{ section.settings.text_color }};">
+  <div class="page-width">
+    <div class="header-inner header-inner--split">
+
+      <!-- Left Navigation -->
+      <nav class="header-nav header-nav--left" aria-label="Left navigation">
+        {%- for link in linklists[section.settings.left_menu].links -%}
+          <a href="{{ link.url }}"
+             {% if link.active %}class="active" aria-current="page"{% endif %}>
+            {{ link.title }}
+          </a>
+        {%- endfor -%}
+      </nav>
+
+      <!-- Logo (centered) -->
+      <a href="/" class="header-logo" aria-label="{{ shop.name }} home">
+        {%- if section.settings.logo != blank -%}
+          <img src="{{ section.settings.logo | image_url: width: 600 }}"
+               alt="{{ shop.name }}"
+               style="height: {{ section.settings.logo_height }}px; width: auto;"
+               loading="eager">
+        {%- else -%}
+          {{ shop.name }}
+        {%- endif -%}
+      </a>
+
+      <!-- Right Navigation + Actions -->
+      <div class="header-right">
+        <nav class="header-nav header-nav--right" aria-label="Right navigation">
+          {%- for link in linklists[section.settings.right_menu].links -%}
+            <a href="{{ link.url }}"
+               {% if link.active %}class="active" aria-current="page"{% endif %}>
+              {{ link.title }}
+            </a>
+          {%- endfor -%}
+        </nav>
+
+        <button class="header-cart-icon" aria-label="Open cart" id="header-cart-icon-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <path d="M16 10a4 4 0 01-8 0"/>
+          </svg>
+          Cart
+          <span class="header-cart-badge cart-count" aria-live="polite">{{ cart.item_count }}</span>
+        </button>
+
+        <button id="mobile-menu-btn"
+                class="header-menu-btn"
+                aria-expanded="false"
+                aria-controls="mobile-nav"
+                aria-label="Open menu">
+          <svg class="menu-icon-open" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+          <svg class="menu-icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mobile nav (combines both menus) -->
+  <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation">
+    {%- for link in linklists[section.settings.left_menu].links -%}
+      <a href="{{ link.url }}" {% if link.active %}aria-current="page"{% endif %}>{{ link.title }}</a>
+    {%- endfor -%}
+    {%- for link in linklists[section.settings.right_menu].links -%}
+      <a href="{{ link.url }}" {% if link.active %}aria-current="page"{% endif %}>{{ link.title }}</a>
+    {%- endfor -%}
+    <a href="/cart">Cart ({{ cart.item_count }})</a>
+  </nav>
+</header>
+
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    { "type": "image_picker", "id": "logo", "label": "Logo image" },
+    {
+      "type": "range",
+      "id": "logo_height",
+      "label": "Logo height",
+      "min": 20,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 44
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Header background color",
+      "default": "#0A0A0A"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Header text & icon color",
+      "default": "#FFFFFF"
+    },
+    { "type": "link_list", "id": "left_menu",  "label": "Left navigation menu",  "default": "main-menu" },
+    { "type": "link_list", "id": "right_menu", "label": "Right navigation menu", "default": "main-menu" }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,83 @@
+<section class="section team-members">
+  <div class="page-width">
+    {%- if section.settings.eyebrow != blank or section.settings.title != blank -%}
+      <div class="section-header">
+        {%- if section.settings.eyebrow != blank -%}
+          <span class="section-eyebrow">{{ section.settings.eyebrow }}</span>
+        {%- endif -%}
+        {%- if section.settings.title != blank -%}
+          <h2 class="section-title">{{ section.settings.title }}</h2>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    <div class="team-grid" style="--team-cols: {{ section.settings.columns }};">
+      {%- for block in section.blocks -%}
+        <div class="team-card" {{ block.shopify_attributes }}>
+          <div class="team-card__photo">
+            {%- if block.settings.image != blank -%}
+              <img src="{{ block.settings.image | image_url: width: 800 }}"
+                   alt="{{ block.settings.name }}"
+                   loading="lazy">
+            {%- elsif block.settings.photo != blank -%}
+              <img src="{{ block.settings.photo | asset_url }}"
+                   alt="{{ block.settings.name }}"
+                   loading="lazy">
+            {%- else -%}
+              <div class="team-card__photo-placeholder">{{ block.settings.name | slice: 0 }}</div>
+            {%- endif -%}
+          </div>
+          <div class="team-card__info">
+            {%- if block.settings.name != blank -%}
+              <h3 class="team-card__name">{{ block.settings.name }}</h3>
+            {%- endif -%}
+            {%- if block.settings.title != blank -%}
+              <p class="team-card__title">{{ block.settings.title }}</p>
+            {%- endif -%}
+            {%- if block.settings.bio != blank -%}
+              <p class="team-card__bio">{{ block.settings.bio }}</p>
+            {%- endif -%}
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Team Members",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "The People" },
+    { "type": "text", "id": "title",   "label": "Title",   "default": "Meet the Team" },
+    {
+      "type": "select", "id": "columns", "label": "Columns per row",
+      "options": [
+        { "value": "2", "label": "2" },
+        { "value": "3", "label": "3" },
+        { "value": "4", "label": "4" }
+      ],
+      "default": "4"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "member",
+      "name": "Team Member",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Photo" },
+        { "type": "text", "id": "photo", "label": "Fallback asset filename", "info": "Only used if no photo is selected above" },
+        { "type": "text", "id": "name",  "label": "Name" },
+        { "type": "text", "id": "title", "label": "Role / Title" },
+        { "type": "textarea", "id": "bio", "label": "Bio (optional)" }
+      ]
+    }
+  ],
+  "presets": [{
+    "name": "Team Members",
+    "blocks": [
+      { "type": "member", "settings": { "name": "Name", "title": "Role" } }
+    ]
+  }]
+}
+{% endschema %}

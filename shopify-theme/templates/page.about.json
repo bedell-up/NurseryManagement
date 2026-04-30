@@ -1,0 +1,50 @@
+{
+  "sections": {
+    "header": {
+      "type": "rich-text",
+      "settings": {
+        "eyebrow": "Who We Are",
+        "title": "Meet the Team",
+        "text": "<p>Bloomsday Natives is a Portland-based ecological landscape design firm and native plant nursery. We are a team of designers, growers, and ecologists committed to creating resilient habitats and meaningful landscapes across the Pacific Northwest.</p>"
+      }
+    },
+    "team": {
+      "type": "team-members",
+      "block_order": ["ren", "rachel", "matt", "vega"],
+      "blocks": {
+        "ren":    { "type": "member", "settings": { "photo": "about-photo-1.jpg", "name": "Ren",    "title": "Owner" } },
+        "rachel": { "type": "member", "settings": { "photo": "about-photo-2.jpg", "name": "Rachel", "title": "Owner" } },
+        "matt":   { "type": "member", "settings": { "photo": "about-photo-3.jpg", "name": "Matt",   "title": "Owner" } },
+        "vega":   { "type": "member", "settings": { "photo": "about-photo-4.jpg", "name": "Vega",   "title": "Nursery / Landscape Crew" } }
+      },
+      "settings": {
+        "eyebrow": "The People",
+        "title": "Meet the Team",
+        "columns": "4"
+      }
+    },
+    "photos": {
+      "type": "static-gallery",
+      "block_order": ["p1", "p2", "p3", "p4"],
+      "blocks": {
+        "p1": { "type": "photo", "settings": { "filename": "about-photo-1.jpg", "alt": "Bloomsday Natives landscape project" } },
+        "p2": { "type": "photo", "settings": { "filename": "about-photo-2.jpg", "alt": "Bloomsday Natives team" } },
+        "p3": { "type": "photo", "settings": { "filename": "about-photo-3.jpg", "alt": "Native planting project" } },
+        "p4": { "type": "photo", "settings": { "filename": "about-photo-4.jpg", "alt": "Ecological landscape" } }
+      },
+      "settings": {
+        "columns": "2",
+        "aspect": "gallery-item--landscape"
+      }
+    },
+    "partners": {
+      "type": "rich-text",
+      "settings": {
+        "eyebrow": "Community",
+        "title": "Community Friends and Partners",
+        "text": "<p>Symbiop &nbsp;·&nbsp; Backyard Habitat &nbsp;·&nbsp; NAYA PDX &nbsp;·&nbsp; Prismid Sanctuary &nbsp;·&nbsp; Wapato Island Farm &nbsp;·&nbsp; Poppy and Finch &nbsp;·&nbsp; Tree Dogs PDX &nbsp;·&nbsp; Portland Native Plant Society</p>"
+      }
+    }
+  },
+  "order": ["header", "team", "photos", "partners"]
+}

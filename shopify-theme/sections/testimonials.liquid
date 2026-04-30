@@ -1,0 +1,68 @@
+<section class="section testimonials">
+  <div class="page-width">
+    <div class="section-header">
+      {%- if section.settings.eyebrow != blank -%}
+        <span class="section-eyebrow">{{ section.settings.eyebrow }}</span>
+      {%- endif -%}
+      {%- if section.settings.title != blank -%}
+        <h2 class="section-title">{{ section.settings.title }}</h2>
+      {%- endif -%}
+    </div>
+
+    <div class="testimonials-grid">
+      {%- for block in section.blocks -%}
+        <div class="testimonial-card" {{ block.shopify_attributes }}>
+          {%- if block.settings.rating > 0 -%}
+            <div class="testimonial-card__rating">
+              {%- for i in (1..block.settings.rating) -%}★{%- endfor -%}
+            </div>
+          {%- endif -%}
+          {%- if block.settings.quote != blank -%}
+            <p class="testimonial-card__quote">"{{ block.settings.quote }}"</p>
+          {%- endif -%}
+          <cite class="testimonial-card__author">
+            {%- if block.settings.author != blank -%}
+              <strong>{{ block.settings.author }}</strong>
+            {%- endif -%}
+            {%- if block.settings.location != blank -%}
+              <span>{{ block.settings.location }}</span>
+            {%- endif -%}
+          </cite>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Testimonials",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "What people say" },
+    { "type": "text", "id": "title",   "label": "Title",   "default": "Community Feedback" }
+  ],
+  "blocks": [
+    {
+      "type": "testimonial",
+      "name": "Testimonial",
+      "settings": [
+        { "type": "textarea", "id": "quote",    "label": "Quote" },
+        { "type": "text",     "id": "author",   "label": "Author name" },
+        { "type": "text",     "id": "location", "label": "Location or project" },
+        {
+          "type": "range", "id": "rating", "label": "Star rating",
+          "min": 0, "max": 5, "step": 1, "default": 5
+        }
+      ]
+    }
+  ],
+  "presets": [{
+    "name": "Testimonials",
+    "blocks": [
+      { "type": "testimonial", "settings": { "quote": "Add a customer quote here.", "author": "Name", "location": "Portland, OR", "rating": 5 } },
+      { "type": "testimonial", "settings": { "quote": "Add a customer quote here.", "author": "Name", "location": "Portland, OR", "rating": 5 } },
+      { "type": "testimonial", "settings": { "quote": "Add a customer quote here.", "author": "Name", "location": "Portland, OR", "rating": 5 } }
+    ]
+  }]
+}
+{% endschema %}

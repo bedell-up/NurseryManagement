@@ -1,0 +1,73 @@
+<section class="section faq-section">
+  <div class="page-width">
+    <div class="section-header">
+      {%- if section.settings.eyebrow != blank -%}
+        <span class="section-eyebrow">{{ section.settings.eyebrow }}</span>
+      {%- endif -%}
+      {%- if section.settings.title != blank -%}
+        <h2 class="section-title">{{ section.settings.title }}</h2>
+      {%- endif -%}
+    </div>
+
+    <div class="faq-list">
+      {%- for block in section.blocks -%}
+        <div class="faq-item{% if forloop.first and section.settings.open_first %} open{% endif %}"
+             {{ block.shopify_attributes }}>
+          <button class="faq-item__question" aria-expanded="false">
+            {{ block.settings.question }}
+            <span class="faq-item__icon" aria-hidden="true"></span>
+          </button>
+          <div class="faq-item__answer rte">
+            {{ block.settings.answer }}
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll('.faq-item__question').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const item = this.closest('.faq-item');
+      const isOpen = item.classList.contains('open');
+      item.closest('.faq-list').querySelectorAll('.faq-item').forEach(i => {
+        i.classList.remove('open');
+        i.querySelector('.faq-item__question').setAttribute('aria-expanded', 'false');
+      });
+      if (!isOpen) {
+        item.classList.add('open');
+        this.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+</script>
+
+{% schema %}
+{
+  "name": "FAQ",
+  "settings": [
+    { "type": "text",     "id": "eyebrow",    "label": "Eyebrow", "default": "FAQ" },
+    { "type": "text",     "id": "title",      "label": "Title",   "default": "Frequently Asked Questions" },
+    { "type": "checkbox", "id": "open_first", "label": "Open first item by default", "default": false }
+  ],
+  "blocks": [
+    {
+      "type": "item",
+      "name": "Question",
+      "settings": [
+        { "type": "text",     "id": "question", "label": "Question", "default": "What is your question?" },
+        { "type": "richtext", "id": "answer",   "label": "Answer",   "default": "<p>Add your answer here.</p>" }
+      ]
+    }
+  ],
+  "presets": [{
+    "name": "FAQ",
+    "blocks": [
+      { "type": "item", "settings": { "question": "Question 1", "answer": "<p>Answer goes here.</p>" } },
+      { "type": "item", "settings": { "question": "Question 2", "answer": "<p>Answer goes here.</p>" } },
+      { "type": "item", "settings": { "question": "Question 3", "answer": "<p>Answer goes here.</p>" } }
+    ]
+  }]
+}
+{% endschema %}

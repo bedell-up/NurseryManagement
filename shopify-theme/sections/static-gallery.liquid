@@ -1,0 +1,72 @@
+<section class="section static-gallery">
+  <div class="page-width">
+    {%- if section.settings.title != blank or section.settings.eyebrow != blank -%}
+      <div class="section-header">
+        {%- if section.settings.eyebrow != blank -%}
+          <span class="section-eyebrow">{{ section.settings.eyebrow }}</span>
+        {%- endif -%}
+        {%- if section.settings.title != blank -%}
+          <h2 class="section-title">{{ section.settings.title }}</h2>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    <div class="gallery-grid" style="--gallery-cols: {{ section.settings.columns }};">
+      {%- for block in section.blocks -%}
+        {%- if block.settings.filename != blank -%}
+          {%- assign img_src = block.settings.filename | asset_url -%}
+          <div class="gallery-item {{ section.settings.aspect }}" {{ block.shopify_attributes }}>
+            <img src="{{ img_src }}"
+                 alt="{{ block.settings.alt | default: shop.name }}"
+                 loading="lazy">
+            {%- if block.settings.caption != blank -%}
+              <p class="gallery-item__caption">{{ block.settings.caption }}</p>
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Static Gallery (Asset)",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow" },
+    { "type": "text", "id": "title",   "label": "Title" },
+    {
+      "type": "select", "id": "columns", "label": "Columns",
+      "options": [
+        { "value": "1", "label": "1 column" },
+        { "value": "2", "label": "2 columns" },
+        { "value": "3", "label": "3 columns" },
+        { "value": "4", "label": "4 columns" }
+      ],
+      "default": "2"
+    },
+    {
+      "type": "select", "id": "aspect", "label": "Image shape",
+      "options": [
+        { "value": "gallery-item--square",    "label": "Square" },
+        { "value": "gallery-item--landscape", "label": "Landscape (4:3)" },
+        { "value": "gallery-item--portrait",  "label": "Portrait (3:4)" },
+        { "value": "gallery-item--natural",   "label": "Natural (no crop)" }
+      ],
+      "default": "gallery-item--landscape"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "photo",
+      "name": "Photo",
+      "settings": [
+        { "type": "text", "id": "filename", "label": "Asset filename (e.g. about-photo-1.jpg)" },
+        { "type": "text", "id": "alt",      "label": "Alt text" },
+        { "type": "text", "id": "caption",  "label": "Caption (optional)" }
+      ]
+    }
+  ],
+  "presets": [{ "name": "Static Gallery (Asset)" }]
+}
+{% endschema %}

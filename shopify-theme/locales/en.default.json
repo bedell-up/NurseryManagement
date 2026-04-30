@@ -1,0 +1,21 @@
+{
+  "general": {
+    "title": "Bloomsday Natives"
+  },
+  "cart": {
+    "title": "Your Cart",
+    "empty": "Your cart is empty",
+    "checkout": "Checkout",
+    "item_count": { "one": "{{ count }} item", "other": "{{ count }} items" }
+  },
+  "products": {
+    "add_to_cart": "Add to Cart",
+    "sold_out": "Sold Out",
+    "unavailable": "Unavailable",
+    "from": "From",
+    "sale": "Sale"
+  },
+  "collections": {
+    "all_plants": "All Plants"
+  }
+}

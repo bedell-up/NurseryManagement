@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1A1A1A">
+
+  <title>
+    {%- if template == 'index' -%}
+      {{ shop.name }} — Ecological Landscape Design & Native Plants · Portland, OR
+    {%- elsif template == 'product' -%}
+      {{ product.title }} — {{ shop.name }}
+    {%- elsif template == 'collection' -%}
+      {{ collection.title }} — {{ shop.name }}
+    {%- elsif template == 'cart' -%}
+      Your Cart — {{ shop.name }}
+    {%- else -%}
+      {{ page_title }} — {{ shop.name }}
+    {%- endif -%}
+  </title>
+
+  {%- if page_description -%}
+    <meta name="description" content="{{ page_description | escape }}">
+  {%- endif -%}
+
+  {%- if settings.favicon != blank -%}
+    <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32 }}">
+  {%- endif -%}
+
+  {{ content_for_header }}
+
+  <link rel="stylesheet" href="{{ 'theme.css' | asset_url }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  {%- if template == 'product' and product -%}
+    <script>
+      window.productVariants = {{ product.variants | json }};
+    </script>
+  {%- endif -%}
+</head>
+
+<body class="template-{{ template.name }}">
+
+  {%- section 'announcement-bar' -%}
+  {%- section 'header' -%}
+
+  <main id="main-content" tabindex="-1">
+    {{ content_for_layout }}
+  </main>
+
+  {%- section 'footer' -%}
+
+  {%- render 'cart-drawer' -%}
+
+  <script src="{{ 'theme.js' | asset_url }}" defer></script>
+</body>
+</html>

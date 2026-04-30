@@ -1,0 +1,140 @@
+{%- comment -%}
+  Renders a product card.
+  Usage: {% render 'product-card', product: product %}
+{%- endcomment -%}
+
+{%- liquid
+  assign product_type = product.type | downcase | strip
+  assign tags_str = product.tags | join: ',' | downcase
+
+  assign is_native     = false
+  assign is_pollinator = false
+  assign is_bird       = false
+  assign is_deer_res   = false
+  if tags_str contains 'native'        or tags_str contains 'pacific northwest'
+    assign is_native = true
+  endif
+  if tags_str contains 'pollinator'
+    assign is_pollinator = true
+  endif
+  if tags_str contains 'bird'
+    assign is_bird = true
+  endif
+  if tags_str contains 'deer-resistant'
+    assign is_deer_res = true
+  endif
+
+  assign on_sale   = false
+  assign sold_out  = false
+  if product.compare_at_price > product.price
+    assign on_sale = true
+  endif
+  unless product.available
+    assign sold_out = true
+  endunless
+-%}
+
+{%- assign sci_name = '' -%}
+{%- for tag in product.tags -%}
+  {%- if tag contains 'sci:' -%}{%- assign sci_name = tag | remove: 'sci:' | strip | downcase -%}{%- break -%}{%- endif -%}
+{%- endfor -%}
+<div class="product-card-wrap"
+     data-title="{{ product.title | downcase | escape }}"
+     data-sci="{{ sci_name | escape }}"
+     data-type="{{ product_type }}">
+  <article class="product-card"
+           data-type="{{ product_type }}"
+           itemscope itemtype="https://schema.org/Product">
+
+    <!-- Image -->
+    <a href="{{ product.url }}" class="product-card__image-wrap" tabindex="-1" aria-hidden="true">
+      {%- if product.featured_image -%}
+        <img class="product-card__image"
+             src="{{ product.featured_image | image_url: width: 600 }}"
+             alt="{{ product.featured_image.alt | default: product.title | escape }}"
+             width="600" height="450"
+             loading="lazy"
+             itemprop="image">
+      {%- else -%}
+        <div class="product-card__image-placeholder">🌿</div>
+      {%- endif -%}
+
+      <!-- Badges -->
+      <div class="product-card__badges">
+        {%- if is_native -%}
+          <span class="badge badge--native">Native</span>
+        {%- endif -%}
+        {%- if sold_out -%}
+          <span class="badge badge--sold-out">Sold Out</span>
+        {%- elsif on_sale -%}
+          <span class="badge badge--sale">Sale</span>
+        {%- endif -%}
+      </div>
+    </a>
+
+    <!-- Body -->
+    <div class="product-card__body">
+      {%- if product_type != blank -%}
+        <p class="product-card__plant-type">{{ product.type }}</p>
+      {%- endif -%}
+
+      <h3 class="product-card__name" itemprop="name">
+        <a href="{{ product.url }}">{{ product.title }}</a>
+      </h3>
+
+      {%- comment -%} Show scientific name from tags if present {%- endcomment -%}
+      {%- for tag in product.tags -%}
+        {%- if tag contains 'sci:' -%}
+          <p class="product-card__scientific">{{ tag | remove: 'sci:' | strip }}</p>
+          {%- break -%}
+        {%- endif -%}
+      {%- endfor -%}
+
+      <!-- Attribute tags -->
+      <div class="product-card__attributes">
+        {%- if is_pollinator -%}<span class="attr-tag">🐝 Pollinator</span>{%- endif -%}
+        {%- if is_bird -%}<span class="attr-tag">🐦 Birds</span>{%- endif -%}
+        {%- if is_deer_res -%}<span class="attr-tag">🦌 Deer Resistant</span>{%- endif -%}
+        {%- for tag in product.tags -%}
+          {%- if tag contains 'sun:' -%}
+            <span class="attr-tag">☀ {{ tag | remove: 'sun:' | strip }}</span>
+            {%- break -%}
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+
+      <!-- Footer -->
+      <div class="product-card__footer">
+        <div class="product-card__price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+          {%- if on_sale -%}
+            <s>{{ product.compare_at_price | money }}</s>
+            <span class="product-card__price--sale" itemprop="price">{{ product.price | money }}</span>
+          {%- else -%}
+            <span itemprop="price">
+              {%- if product.price_varies -%}
+                From {{ product.price_min | money }}
+              {%- else -%}
+                {{ product.price | money }}
+              {%- endif -%}
+            </span>
+          {%- endif -%}
+        </div>
+
+        {%- if sold_out -%}
+          <span class="product-card__availability availability--out">Sold Out</span>
+        {%- else -%}
+          {%- if product.variants.size > 1 -%}
+            <span class="product-card__availability availability--in-stock">{{ product.variants.size }} sizes</span>
+          {%- else -%}
+            {%- assign avail_label = product.metafields.custom.availability_label -%}
+            {%- if avail_label != blank -%}
+              <span class="product-card__availability availability--coming">{{ avail_label }}</span>
+            {%- else -%}
+              <span class="product-card__availability availability--in-stock">Available</span>
+            {%- endif -%}
+          {%- endif -%}
+        {%- endif -%}
+      </div>
+    </div>
+  </article>
+</div>

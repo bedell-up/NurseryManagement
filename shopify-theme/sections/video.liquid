@@ -1,0 +1,65 @@
+<section class="section video-section">
+  <div class="page-width">
+    <div class="section-header">
+      {%- if section.settings.eyebrow != blank -%}
+        <span class="section-eyebrow">{{ section.settings.eyebrow }}</span>
+      {%- endif -%}
+      {%- if section.settings.title != blank -%}
+        <h2 class="section-title">{{ section.settings.title }}</h2>
+      {%- endif -%}
+      {%- if section.settings.description != blank -%}
+        <p class="section-subtitle">{{ section.settings.description }}</p>
+      {%- endif -%}
+    </div>
+
+    {%- if section.settings.embed_url != blank -%}
+      <div class="video-wrapper" id="video-wrapper-{{ section.id }}">
+        {%- if section.settings.cover_image != blank -%}
+          <div class="video-cover" id="video-cover-{{ section.id }}">
+            <img src="{{ section.settings.cover_image | image_url: width: 1200 }}"
+                 alt="{{ section.settings.title | escape }}"
+                 loading="lazy">
+            <div class="video-cover__play">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--color-primary)">
+                <polygon points="5,3 19,12 5,21"/>
+              </svg>
+            </div>
+          </div>
+          <iframe id="video-iframe-{{ section.id }}"
+                  src=""
+                  data-src="{{ section.settings.embed_url }}?autoplay=1"
+                  allow="autoplay; fullscreen"
+                  style="display:none;width:100%;height:100%;border:none;">
+          </iframe>
+          <script>
+            document.getElementById('video-cover-{{ section.id }}').addEventListener('click', function() {
+              this.style.display = 'none';
+              var iframe = document.getElementById('video-iframe-{{ section.id }}');
+              iframe.src = iframe.dataset.src;
+              iframe.style.display = 'block';
+            });
+          </script>
+        {%- else -%}
+          <iframe src="{{ section.settings.embed_url }}"
+                  allow="autoplay; fullscreen"
+                  allowfullscreen>
+          </iframe>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Video",
+  "settings": [
+    { "type": "text",         "id": "eyebrow",     "label": "Eyebrow" },
+    { "type": "text",         "id": "title",       "label": "Title" },
+    { "type": "textarea",     "id": "description", "label": "Description" },
+    { "type": "text",         "id": "embed_url",   "label": "Embed URL", "info": "Paste the embed URL from YouTube (share → embed) or Vimeo. Example: https://www.youtube.com/embed/VIDEO_ID" },
+    { "type": "image_picker", "id": "cover_image", "label": "Cover image (optional — click to play)" }
+  ],
+  "presets": [{ "name": "Video" }]
+}
+{% endschema %}
