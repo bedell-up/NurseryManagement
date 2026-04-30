@@ -12,6 +12,15 @@
         "btn_secondary_url": "/pages/contact"
       }
     },
+    "spotlights": {
+      "type": "spotlights-notices",
+      "settings": {
+        "eyebrow": "From the Nursery",
+        "title": "News & Notices",
+        "alt_bg": false,
+        "api_base_url": "https://native.pscapps.com"
+      }
+    },
     "services": {
       "type": "rich-text",
       "settings": {
@@ -81,5 +90,5 @@
       }
     }
   },
-  "order": ["hero", "services", "approach", "collaboration", "categories", "featured", "mission"]
+  "order": ["hero", "spotlights", "services", "approach", "collaboration", "categories", "featured", "mission"]
 }
