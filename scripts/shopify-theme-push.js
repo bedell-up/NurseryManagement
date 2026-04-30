@@ -121,6 +121,27 @@ async function pushFiles(filesToPush) {
   log(`\nDone. Pushed: ${pushed}  Errors: ${errors}`);
 }
 
+// ── Pull helper (mirrors shopify-theme-pull.js) ───────────────
+async function pullFromShopify(themeId, keys) {
+  log('Pulling latest from Shopify first to avoid overwriting editor changes…');
+  let pulled = 0;
+  for (const key of keys) {
+    try {
+      const { asset } = await shopify.getThemeAsset(themeId, key);
+      const dest = path.join(THEME_DIR, key);
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      if (asset.attachment) {
+        fs.writeFileSync(dest, Buffer.from(asset.attachment, 'base64'));
+      } else {
+        fs.writeFileSync(dest, asset.value || '', 'utf8');
+      }
+      pulled++;
+      await sleep(400);
+    } catch (_) { /* file may be new locally — skip pull */ }
+  }
+  log(`Pulled ${pulled} file(s) from Shopify.`);
+}
+
 // ── Main ──────────────────────────────────────────────────────
 async function main() {
   if (args.includes('--list')) {
@@ -133,7 +154,7 @@ async function main() {
     return setTheme(id);
   }
 
-  // Single file push
+  // Single file push — pull that file first, then push our version
   const singleFile = args[0] && !args[0].startsWith('--') ? args[0] : null;
   if (singleFile) {
     const fullPath = path.resolve(THEME_DIR, singleFile);
@@ -141,14 +162,23 @@ async function main() {
       console.error(`File not found: ${fullPath}`);
       process.exit(1);
     }
+    const themeId = await getOrPickThemeId();
+    await pullFromShopify(themeId, [singleFile]);
     return pushFiles([{ key: singleFile, fullPath }]);
   }
 
-  // Push all files
+  // Full push — pull ALL existing remote files first so editor changes are preserved
   if (!fs.existsSync(THEME_DIR)) {
     console.error(`Theme directory not found: ${THEME_DIR}`);
     process.exit(1);
   }
+  const themeId = await getOrPickThemeId();
+  const { assets } = await shopify.listThemeAssets(themeId)
+    .then(d => d)
+    .catch(() => ({ assets: [] }));
+  const remoteKeys = (assets || []).map(a => a.key);
+  if (remoteKeys.length) await pullFromShopify(themeId, remoteKeys);
+
   const all = collectFiles(THEME_DIR);
   return pushFiles(all);
 }
