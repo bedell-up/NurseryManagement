@@ -40,20 +40,31 @@ async function webhookOrderCreated(req, res) {
   }
 }
 
-// Push a plant's product to Shopify
+// Push a plant's product to Shopify (creates or updates)
 async function pushProduct(req, res) {
   const plant = await Plant.findByPk(req.params.plant_id, {
     include: [{ association: 'variants', include: ['pricing'] }],
   });
   if (!plant) return res.status(404).json({ error: 'Plant not found' });
 
-  const result = await shopifyService.createShopifyProduct(plant, plant.variants);
-  const shopifyProduct = result.product;
+  let shopifyProduct;
+  let action;
 
-  // Save Shopify product ID back to plant
+  if (plant.shopify_product_id) {
+    // Update existing product
+    const result = await shopifyService.updateShopifyProduct(plant.shopify_product_id, plant, plant.variants);
+    shopifyProduct = result.product;
+    action = 'updated';
+  } else {
+    // Create new product
+    const result = await shopifyService.createShopifyProduct(plant, plant.variants);
+    shopifyProduct = result.product;
+    action = 'created';
+  }
+
   await plant.update({ shopify_product_id: String(shopifyProduct.id), shopify_synced_at: new Date() });
 
-  // Save variant IDs
+  // Save/update variant IDs
   for (const sv of shopifyProduct.variants) {
     const localVariant = plant.variants.find((v) => v.sku === sv.sku || v.container_size === sv.title);
     if (localVariant) {
@@ -61,7 +72,7 @@ async function pushProduct(req, res) {
     }
   }
 
-  res.json({ message: 'Product pushed to Shopify', shopify_product_id: shopifyProduct.id });
+  res.json({ message: `Product ${action} on Shopify`, shopify_product_id: shopifyProduct.id, action });
 }
 
 async function getLocations(req, res) {
