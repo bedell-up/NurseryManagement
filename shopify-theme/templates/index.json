@@ -3,13 +3,14 @@
     "hero": {
       "type": "hero-banner",
       "settings": {
+        "image": "shopify:\/\/shop_images\/shutterstock_1512536354.jpg",
         "eyebrow": "Ecological Landscape Design · Portland, OR",
         "heading": "Discover Ecological Landscape Projects",
-        "subheading": "We specialize in native habitat, natural resource enhancement, stormwater management, edible landscapes, and climate resilience.",
+        "subheading": "See our range of services designed to help you create habitat at any stage of the process. We are passionate about finding creative solutions to meet your unique site and project needs; reach out to us with your ideas!",
         "btn_primary_label": "Explore Our Services",
         "btn_primary_url": "\/pages\/services",
-        "btn_secondary_label": "Inquire Now",
-        "btn_secondary_url": "\/pages\/contact"
+        "btn_secondary_label": "Shop Now",
+        "btn_secondary_url": "shopify:\/\/collections\/all"
       }
     },
     "spotlights": {
@@ -24,37 +25,89 @@
     "services": {
       "type": "rich-text",
       "settings": {
-        "eyebrow": "What We Do",
+        "eyebrow": "What We Offer",
         "title": "Explore Our Services",
-        "text": "<p><strong>Landscape Design & Build<\/strong> — Specializing in native habitat, natural resource enhancement, stormwater management, edible landscapes, and climate resilience.<\/p><p><strong>Installation<\/strong> — Resilient landscapes including gathering areas, patios, pathways, raised beds, rain gardens, and living walls.<\/p><p><strong>Plant Orders & Contract Growing<\/strong> — Nursery services and contract growing for your project, large or small.<\/p><p><strong>Ecological Consulting<\/strong> — Long-term project oversight and tailored guidance for your land.<\/p>",
+        "text": "<p><strong>Landscape Design & Build<\/strong> - We specialize in native habitat, natural resource enhancement, stormwater management, edible landscapes, and climate resilience. Collectively we have over a decade of experience creating habitat for residential, commercial, community, and public spaces. Browse our <a href=\"https:\/\/www.bloomsdaynatives.com\/projects\">portfolio <\/a>to see some of the work we do.<br\/><br\/><\/p><p><strong>Installation<\/strong> - We install resilient landscape projects designed to support habitat and community. Beyond habitat and native plants, we also install gathering areas, patios, pathways, raised beds, structures, fences, rain gardens, small retaining walls, living garden walls, and much more. See our <a href=\"https:\/\/www.bloomsdaynatives.com\/projects\">portfolio <\/a>for some ideas, or reach out with your idea.<br\/><br\/><\/p><p><strong>Plant Orders & Contract Growing<\/strong> - Have a project in the works that you need plants for? We offer contract growing services as well as plant ordering. See <a href=\"https:\/\/www.bloomsdaynatives.com\/nursery-2\">Nursery page <\/a>for details and our <a href=\"https:\/\/www.bloomsdaynatives.com\/oshop\">Shop page <\/a>to shop our inventory.<br\/><br\/><\/p><p><strong>Ecological Consulting<\/strong> - We oversee and help clients work through longer-term projects, providing a framework and tailored guidance at various project stages and scales. See our <a href=\"https:\/\/www.bloomsdaynatives.com\/consulting\">Ecological Consulting<\/a> page for details.<br\/><br\/><\/p>",
         "btn_label": "Inquire Now",
         "btn_url": "\/pages\/contact"
       }
     },
-    "approach": {
-      "type": "image-with-text",
-      "settings": {
-        "image_position": "right",
-        "eyebrow": "Our Process",
-        "heading": "Approach with Curiosity",
-        "text": "We begin with on-site consultations and observation-based work. Every landscape tells a story — we listen first. Our process is rooted in understanding the unique ecology of your site before we ever put pen to paper.",
-        "btn_label": "Learn More",
-        "btn_url": "\/pages\/about"
-      }
-    },
-    "collaboration": {
-      "type": "image-with-text",
-      "settings": {
-        "image_position": "left",
-        "eyebrow": "How We Work",
-        "heading": "Collaboration is Central",
-        "text": "We bring together diverse perspectives and community-led design processes. Great landscapes emerge from partnership — between people, plants, and place. We believe the best ecological outcomes come from working together.",
-        "btn_label": "Meet the Team",
-        "btn_url": "\/pages\/team"
-      }
-    },
     "categories": {
       "type": "plant-categories",
+      "blocks": {
+        "tree": {
+          "type": "category",
+          "settings": {
+            "icon_image": "category-tree.png",
+            "icon": "🌳",
+            "label": "Trees",
+            "link": "\/collections\/all\/tree"
+          }
+        },
+        "shrub": {
+          "type": "category",
+          "settings": {
+            "icon_image": "category-shrub.png",
+            "icon": "🌿",
+            "label": "Shrubs",
+            "link": "\/collections\/all\/shrub"
+          }
+        },
+        "perennial": {
+          "type": "category",
+          "settings": {
+            "icon_image": "category-perennial.png",
+            "icon": "🌸",
+            "label": "Perennials",
+            "link": "\/collections\/all\/perennial"
+          }
+        },
+        "graminoid": {
+          "type": "category",
+          "settings": {
+            "icon_image": "category-graminoid.png",
+            "icon": "🌾",
+            "label": "Graminoids",
+            "link": "\/collections\/all\/graminoid"
+          }
+        },
+        "bulb": {
+          "type": "category",
+          "settings": {
+            "icon_image": "category-bulb.png",
+            "icon": "🌷",
+            "label": "Bulbs",
+            "link": "\/collections\/all\/bulb"
+          }
+        },
+        "aquatic": {
+          "type": "category",
+          "settings": {
+            "icon_image": "category-aquatic.png",
+            "icon": "💧",
+            "label": "Aquatic",
+            "link": "\/collections\/all\/aquatic"
+          }
+        },
+        "vine": {
+          "type": "category",
+          "settings": {
+            "icon_image": "category-vine.png",
+            "icon": "🍃",
+            "label": "Vines",
+            "link": "\/collections\/all\/vine"
+          }
+        },
+        "annual": {
+          "type": "category",
+          "settings": {
+            "icon_image": "category-annual.png",
+            "icon": "🌼",
+            "label": "Annuals",
+            "link": "\/collections\/all\/annual"
+          }
+        }
+      },
       "block_order": [
         "tree",
         "shrub",
@@ -65,101 +118,62 @@
         "vine",
         "annual"
       ],
+      "settings": {
+        "eyebrow": "Find your plant",
+        "title": "Browse by Type",
+        "card_size": 160,
+        "image_fit": "contain"
+      }
+    },
+    "multicolumn_7Nf3HT": {
+      "type": "multicolumn",
       "blocks": {
-        "tree": {
-          "type": "category",
+        "column_pnKBaP": {
+          "type": "column",
           "settings": {
-            "icon": "🌳",
-            "label": "Trees",
-            "icon_image": "category-tree.png",
-            "link": "\/collections\/all\/tree"
-          }
-        },
-        "shrub": {
-          "type": "category",
-          "settings": {
+            "image": "shopify:\/\/shop_images\/2929sepowell.webp",
             "icon": "🌿",
-            "label": "Shrubs",
-            "icon_image": "category-shrub.png",
-            "link": "\/collections\/all\/shrub"
+            "heading": "Approach with Curiosity",
+            "text": "<p>We begin every project with a fresh perspective and a desire to understand the story of your land and your unique goals. This typically starts with an on-site consultation, where you introduce us to the space and share your vision.<\/p><p>We ground our work in observation, listening closely to both the land and to you. By maintaining a sense of curiosity and wonder throughout the process, we uncover opportunities that are rooted in place and guided by purpose.<\/p>",
+            "btn_label": "",
+            "btn_url": ""
           }
         },
-        "perennial": {
-          "type": "category",
+        "column_DDeNDF": {
+          "type": "column",
           "settings": {
+            "image": "shopify:\/\/shop_images\/IMG_9079.webp",
+            "icon": "🌱",
+            "heading": "Collaboration is Central",
+            "text": "<p>As we move forward, we reflect on our observations and your goals to ensure we are aligned. Our team brings diverse perspectives and thoughtful alternatives to each project, enriching the design process through shared insight and experience.<\/p><p>We have experience facilitating and participating in community consultation and community-led design and planning processes. Open dialogue, feedback, and discussion are welcomed and encouraged throughout. Collaboration is not just a step in our process. It is the foundation of it.<\/p>",
+            "btn_label": "",
+            "btn_url": ""
+          }
+        },
+        "column_8TwTNh": {
+          "type": "column",
+          "settings": {
+            "image": "shopify:\/\/shop_images\/IMG_3751.webp",
             "icon": "🌸",
-            "label": "Perennials",
-            "icon_image": "category-perennial.png",
-            "link": "\/collections\/all\/perennial"
-          }
-        },
-        "graminoid": {
-          "type": "category",
-          "settings": {
-            "icon": "🌾",
-            "label": "Graminoids",
-            "icon_image": "category-graminoid.png",
-            "link": "\/collections\/all\/graminoid"
-          }
-        },
-        "bulb": {
-          "type": "category",
-          "settings": {
-            "icon": "🌷",
-            "label": "Bulbs",
-            "icon_image": "category-bulb.png",
-            "link": "\/collections\/all\/bulb"
-          }
-        },
-        "aquatic": {
-          "type": "category",
-          "settings": {
-            "icon": "💧",
-            "label": "Aquatic",
-            "icon_image": "category-aquatic.png",
-            "link": "\/collections\/all\/aquatic"
-          }
-        },
-        "vine": {
-          "type": "category",
-          "settings": {
-            "icon": "🍃",
-            "label": "Vines",
-            "icon_image": "category-vine.png",
-            "link": "\/collections\/all\/vine"
-          }
-        },
-        "annual": {
-          "type": "category",
-          "settings": {
-            "icon": "🌼",
-            "label": "Annuals",
-            "icon_image": "category-annual.png",
-            "link": "\/collections\/all\/annual"
+            "heading": "Plans are Dynamic",
+            "text": "<p>Nature is never static, and neither are the ecosystems we are a part of. We design with the understanding that landscapes shift and evolve over time. Our approach is adaptive, like water; flexible and responsive in the face of changing conditions or unforeseen challenges.<\/p><p>We consider multiple outcomes and remain open in both mindset and communication throughout each phase of a project. Central to our work is preparing for the realities of a warming climate. We prioritize biodiversity and community care as foundational to building resilient, thriving habitats that endure and adapt over time.<\/p>",
+            "btn_label": "",
+            "btn_url": ""
           }
         }
       },
-      "settings": {}
-    },
-    "featured": {
-      "type": "featured-collection",
+      "block_order": [
+        "column_pnKBaP",
+        "column_DDeNDF",
+        "column_8TwTNh"
+      ],
+      "name": "Multicolumn",
       "settings": {
-        "eyebrow": "In Stock Now",
-        "title": "Available This Season",
-        "description": "Hand-picked from our current inventory — all plants ready to go home with you.",
-        "products_to_show": 8,
-        "view_all_label": "View All Plants",
-        "alt_bg": false
-      }
-    },
-    "mission": {
-      "type": "rich-text",
-      "settings": {
-        "eyebrow": "Our Philosophy",
-        "title": "Plans are Dynamic",
-        "text": "<p>Nature is never static, and neither are the ecosystems we are a part of. We design with the understanding that landscapes shift and evolve over time — adaptive design responding to climate change, prioritizing biodiversity, and growing with your land for the long haul.<\/p>",
-        "btn_label": "Contact Us",
-        "btn_url": "\/pages\/contact"
+        "eyebrow": "",
+        "title": "",
+        "subtitle": "",
+        "columns": "3",
+        "bg_color": "cream"
       }
     }
   },
@@ -167,10 +181,7 @@
     "hero",
     "spotlights",
     "services",
-    "approach",
-    "collaboration",
     "categories",
-    "featured",
-    "mission"
+    "multicolumn_7Nf3HT"
   ]
 }

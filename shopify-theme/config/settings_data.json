@@ -2,6 +2,40 @@
   "current": {
     "color_primary": "#2C5F2E",
     "color_cream": "#F5EFE6",
-    "color_earth": "#8C6D46"
+    "color_earth": "#8C6D46",
+    "sections": {
+      "announcement-bar": {
+        "type": "announcement-bar",
+        "settings": {
+          "show": true,
+          "text": "Open Mon–Sun 11am–5pm at Plural Collective · 8012 SE 13th St, Portland, OR · 503-607-4719",
+          "link": ""
+        }
+      },
+      "header": {
+        "type": "header",
+        "settings": {
+          "logo": "shopify:\/\/shop_images\/WHT_Banner_N_cf5fe715-4242-4bbc-987a-125a4615de6e.webp",
+          "logo_height": 100,
+          "bg_color": "#0a0a0a",
+          "text_color": "#ffffff",
+          "left_menu": "left-menu",
+          "right_menu": "main-menu"
+        }
+      },
+      "footer": {
+        "type": "footer",
+        "settings": {
+          "tagline": "",
+          "email": "info@bloomsdaynatives.com",
+          "phone": "503-607-4719",
+          "address": "8012 SE 13th St. Portland, OR",
+          "hours": "Mon–Sun 11am–5pm @ Plural Collective",
+          "shop_menu": "footer",
+          "info_menu": "footer"
+        }
+      }
+    },
+    "content_for_index": []
   }
 }
