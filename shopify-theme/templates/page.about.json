@@ -107,14 +107,19 @@
       }
     },
     "partners": {
-      "type": "rich-text",
-      "settings": {
-        "eyebrow": "Community",
-        "title": "Community Friends and Partners",
-        "text": "<p>Symbiop &nbsp;·&nbsp; Backyard Habitat &nbsp;·&nbsp; NAYA PDX &nbsp;·&nbsp; Prismid Sanctuary &nbsp;·&nbsp; Wapato Island Farm &nbsp;·&nbsp; Poppy and Finch &nbsp;·&nbsp; Tree Dogs PDX &nbsp;·&nbsp; Portland Native Plant Society<\/p>",
-        "btn_label": "",
-        "btn_url": ""
-      }
+      "type": "partner-logos",
+      "block_order": ["symbiop","backyard-habitat","naya-pdx","prismid","wapato","poppy-finch","tree-dogs","npso"],
+      "blocks": {
+        "symbiop":          { "type": "partner", "settings": { "name": "SymbiOp",                      "logo_file": "symbiop.png",                       "url": "https://symbiop.com" } },
+        "backyard-habitat": { "type": "partner", "settings": { "name": "Backyard Habitat",             "logo_file": "backyard-habitat.svg",              "url": "https://backyardhabitats.org" } },
+        "naya-pdx":         { "type": "partner", "settings": { "name": "NAYA PDX",                    "logo_file": "naya-pdx.png",                      "url": "https://nayapdx.org" } },
+        "prismid":          { "type": "partner", "settings": { "name": "Prismid Sanctuary",            "logo_file": "prismid-sanctuary.png",             "url": "https://www.prismid.org" } },
+        "wapato":           { "type": "partner", "settings": { "name": "Wapato Island Farm",           "logo_file": "wapato-island-farm.png",            "url": "https://www.wapatoislandfarm.com" } },
+        "poppy-finch":      { "type": "partner", "settings": { "name": "Poppy & Finch",          "logo_file": "poppy-and-finch.png",               "url": "https://www.poppyandfinch.com" } },
+        "tree-dogs":        { "type": "partner", "settings": { "name": "Tree Dogs PDX",               "logo_file": "tree-dogs-pdx.gif",                 "url": "https://www.treedogspdx.com" } },
+        "npso":             { "type": "partner", "settings": { "name": "Portland Native Plant Society","logo_file": "portland-native-plant-society.jpg", "url": "https://portlandnativeplants.org" } }
+      },
+      "settings": { "eyebrow": "Community", "title": "Friends & Partners", "subtitle": "", "alt_bg": true }
     }
   },
   "order": [

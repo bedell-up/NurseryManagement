@@ -154,7 +154,7 @@ async function main() {
     return setTheme(id);
   }
 
-  // Single file push — pull that file first, then push our version
+  // Single file push — push our local version directly (no pull, we intend to overwrite)
   const singleFile = args[0] && !args[0].startsWith('--') ? args[0] : null;
   if (singleFile) {
     const fullPath = path.resolve(THEME_DIR, singleFile);
@@ -162,8 +162,6 @@ async function main() {
       console.error(`File not found: ${fullPath}`);
       process.exit(1);
     }
-    const themeId = await getOrPickThemeId();
-    await pullFromShopify(themeId, [singleFile]);
     return pushFiles([{ key: singleFile, fullPath }]);
   }
 
