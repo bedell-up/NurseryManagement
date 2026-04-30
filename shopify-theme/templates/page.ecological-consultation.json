@@ -1,0 +1,110 @@
+{
+  "sections": {
+    "header": {
+      "type": "rich-text",
+      "settings": {
+        "eyebrow": "Services",
+        "title": "Ecological Consultation",
+        "text": "<p>We offer tailored ecological consulting services for homeowners, landowners, and organisations looking to restore, design, and manage native habitats across the Pacific Northwest.<\/p>",
+        "btn_label": "Get in Touch",
+        "btn_url": "\/pages\/contact"
+      }
+    },
+    "services": {
+      "type": "multicolumn",
+      "block_order": ["col1", "col2", "col3"],
+      "blocks": {
+        "col1": {
+          "type": "column",
+          "settings": {
+            "icon": "🌱",
+            "heading": "Site Assessment",
+            "text": "<p>On-site consultation and observation-based evaluation of your land’s ecology, existing vegetation, soil, and hydrology.<\/p>",
+            "btn_label": "",
+            "btn_url": ""
+          }
+        },
+        "col2": {
+          "type": "column",
+          "settings": {
+            "icon": "🗺️",
+            "heading": "Habitat Design",
+            "text": "<p>Custom native plant design plans tailored to your site conditions, goals, and budget — from rain gardens to full habitat restorations.<\/p>",
+            "btn_label": "",
+            "btn_url": ""
+          }
+        },
+        "col3": {
+          "type": "column",
+          "settings": {
+            "icon": "🔭",
+            "heading": "Ongoing Guidance",
+            "text": "<p>Long-term project oversight, seasonal management recommendations, and adaptive guidance as your landscape evolves.<\/p>",
+            "btn_label": "",
+            "btn_url": ""
+          }
+        }
+      },
+      "settings": {
+        "eyebrow": "What We Offer",
+        "title": "Consultation Services",
+        "columns": "3",
+        "bg_color": "cream"
+      }
+    },
+    "process": {
+      "type": "image-with-text",
+      "settings": {
+        "image_position": "right",
+        "eyebrow": "Our Process",
+        "heading": "We Begin with Listening",
+        "text": "Every landscape is different. We start with a conversation about your goals, then visit your site to understand its unique ecology before recommending any course of action. Our approach is observational, collaborative, and rooted in the local ecosystem.",
+        "btn_label": "Meet the Team",
+        "btn_url": "\/pages\/about"
+      }
+    },
+    "faq": {
+      "type": "collapsible-content",
+      "block_order": ["q1", "q2", "q3"],
+      "blocks": {
+        "q1": {
+          "type": "item",
+          "settings": {
+            "heading": "What does a consultation include?",
+            "content": "<p>An initial consultation includes an on-site visit, a written summary of observations, and recommendations for native planting, habitat improvement, or landscape design depending on your goals.<\/p>"
+          }
+        },
+        "q2": {
+          "type": "item",
+          "settings": {
+            "heading": "How long does a consultation take?",
+            "content": "<p>Site visits typically take 1–2 hours depending on property size. A written summary is usually delivered within one week of the visit.<\/p>"
+          }
+        },
+        "q3": {
+          "type": "item",
+          "settings": {
+            "heading": "Do you work outside Portland?",
+            "content": "<p>Our primary service area is the Portland metro region and surrounding Willamette Valley, but we do take on select projects throughout the Pacific Northwest. Contact us to discuss your location.<\/p>"
+          }
+        }
+      },
+      "settings": {
+        "eyebrow": "Questions",
+        "title": "Frequently Asked",
+        "open_first": true
+      }
+    },
+    "cta": {
+      "type": "rich-text",
+      "settings": {
+        "eyebrow": "Ready to Start?",
+        "title": "Book a Consultation",
+        "text": "<p>Reach out to schedule a site visit or ask us anything about your project. We typically respond within two business days.<\/p>",
+        "btn_label": "Contact Us",
+        "btn_url": "\/pages\/contact"
+      }
+    }
+  },
+  "order": ["header", "services", "process", "faq", "cta"]
+}
