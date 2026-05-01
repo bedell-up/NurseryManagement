@@ -7,6 +7,9 @@
       {%- if section.settings.title != blank -%}
         <h2 class="section-title">{{ section.settings.title }}</h2>
       {%- endif -%}
+      {%- if section.settings.subtitle != blank -%}
+        <p class="section-subtitle">{{ section.settings.subtitle }}</p>
+      {%- endif -%}
     </div>
 
     <div class="collapsible-list">
@@ -26,6 +29,15 @@
         </div>
       {%- endfor -%}
     </div>
+
+    {%- if section.settings.cta_label != blank -%}
+      <div class="collapsible-section__cta">
+        <a href="{{ section.settings.cta_url | default: '#' }}"
+           class="btn btn--{{ section.settings.cta_style }}">
+          {{ section.settings.cta_label }}
+        </a>
+      </div>
+    {%- endif -%}
   </div>
 </section>
 
@@ -59,8 +71,24 @@
 {
   "name": "Collapsible Content",
   "settings": [
-    { "type": "text",     "id": "eyebrow",    "label": "Eyebrow" },
+    { "type": "text",     "id": "eyebrow",    "label": "Eyebrow text" },
     { "type": "text",     "id": "title",      "label": "Title" },
+    { "type": "textarea", "id": "subtitle",   "label": "Subtitle / description" },
+    { "type": "header",   "content": "Call to action" },
+    { "type": "text",     "id": "cta_label",  "label": "Button label" },
+    { "type": "url",      "id": "cta_url",    "label": "Button link" },
+    {
+      "type": "select",
+      "id": "cta_style",
+      "label": "Button style",
+      "options": [
+        { "value": "primary", "label": "Primary (dark filled)" },
+        { "value": "outline", "label": "Outline" },
+        { "value": "earth",   "label": "Earth (brown filled)" }
+      ],
+      "default": "outline"
+    },
+    { "type": "header",   "content": "Options" },
     { "type": "checkbox", "id": "open_first", "label": "Open first item by default", "default": false }
   ],
   "blocks": [

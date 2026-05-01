@@ -1804,6 +1804,7 @@ p { color: var(--color-text-light); line-height: 1.75; }
 .collapsible-item.open .collapsible-item__chevron { transform: rotate(180deg); }
 .collapsible-item__content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; padding: 0 1.5rem; color: var(--color-text-light); line-height: 1.75; }
 .collapsible-item.open .collapsible-item__content { padding-bottom: 1.5rem; }
+.collapsible-section__cta { text-align: center; margin-top: 2.5rem; }
 
 /* ── Accessibility ─────────────────────────────────────────── */
 :focus-visible {
