@@ -5,6 +5,14 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap');
 
+@font-face {
+  font-family: 'HandCraftedA';
+  src: url('HandCraftedARegular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ── Design Tokens ─────────────────────────────────────────── */
 :root {
   --color-primary:       #1A1A1A;
@@ -26,7 +34,7 @@
   --color-error:         #C0392B;
   --color-success:       #2D7A5F;
 
-  --font-heading: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-heading: 'HandCraftedA', 'Playfair Display', Georgia, 'Times New Roman', serif;
   --font-body:    'Inter', system-ui, -apple-system, sans-serif;
 
   --radius-sm:   4px;
