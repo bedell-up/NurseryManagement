@@ -4,7 +4,7 @@
   Each block = one partner: logo asset filename, display name, and URL.
 {% endcomment %}
 
-<section class="section partner-logos{% if section.settings.alt_bg %} partner-logos--alt{% endif %}">
+<section class="section partner-logos{% if section.settings.alt_bg %} partner-logos--alt{% endif %}"{%- if section.settings.anchor_id != blank %} id="{{ section.settings.anchor_id | handleize }}"{% endif %}>
   <div class="page-width">
 
     {%- if section.settings.eyebrow != blank or section.settings.title != blank -%}
@@ -122,7 +122,8 @@
     { "type": "text",     "id": "eyebrow",  "label": "Eyebrow",   "default": "Community" },
     { "type": "text",     "id": "title",    "label": "Title",     "default": "Friends & Partners" },
     { "type": "textarea", "id": "subtitle", "label": "Subtitle" },
-    { "type": "checkbox", "id": "alt_bg",   "label": "White background", "default": true }
+    { "type": "checkbox", "id": "alt_bg",   "label": "White background", "default": true },
+    { "type": "text", "id": "anchor_id", "label": "Section ID", "info": "Optional. Set a short ID (e.g. \"services\") to use as an anchor link target. Then link to \"#services\" from any button." }
   ],
   "blocks": [
     {

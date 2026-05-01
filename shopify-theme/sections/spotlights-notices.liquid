@@ -10,7 +10,7 @@
   id="spotlights-notices-{{ section.id }}"
   data-api-url="{{ section.settings.api_base_url }}"
   style="display:none"
->
+{%- if section.settings.anchor_id != blank %} id="{{ section.settings.anchor_id | handleize }}"{% endif %}>
   <div class="page-width">
     <div class="section-header section-header--centered" id="sn-header-{{ section.id }}" style="display:none">
       {%- if section.settings.eyebrow != blank -%}
@@ -262,7 +262,8 @@
       "label": "API base URL",
       "info": "Base URL of the Bloomsday Natives backend. Update this if the domain changes.",
       "default": "https://native.pscapps.com"
-    }
+    },
+    { "type": "text", "id": "anchor_id", "label": "Section ID", "info": "Optional. Set a short ID (e.g. \"services\") to use as an anchor link target. Then link to \"#services\" from any button." }
   ],
   "presets": [{ "name": "Spotlights & Notices" }]
 }

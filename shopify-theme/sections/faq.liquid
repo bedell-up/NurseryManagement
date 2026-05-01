@@ -1,4 +1,4 @@
-<section class="section faq-section">
+<section class="section faq-section"{%- if section.settings.anchor_id != blank %} id="{{ section.settings.anchor_id | handleize }}"{% endif %}>
   <div class="page-width">
     <div class="section-header">
       {%- if section.settings.eyebrow != blank -%}
@@ -49,7 +49,8 @@
   "settings": [
     { "type": "text",     "id": "eyebrow",    "label": "Eyebrow", "default": "FAQ" },
     { "type": "text",     "id": "title",      "label": "Title",   "default": "Frequently Asked Questions" },
-    { "type": "checkbox", "id": "open_first", "label": "Open first item by default", "default": false }
+    { "type": "checkbox", "id": "open_first", "label": "Open first item by default", "default": false },
+    { "type": "text", "id": "anchor_id", "label": "Section ID", "info": "Optional. Set a short ID (e.g. \"services\") to use as an anchor link target. Then link to \"#services\" from any button." }
   ],
   "blocks": [
     {

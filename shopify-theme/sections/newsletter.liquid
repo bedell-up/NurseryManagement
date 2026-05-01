@@ -1,4 +1,4 @@
-<section class="section newsletter-section">
+<section class="section newsletter-section"{%- if section.settings.anchor_id != blank %} id="{{ section.settings.anchor_id | handleize }}"{% endif %}>
   <div class="page-width">
     <div class="newsletter-inner">
       {%- if section.settings.eyebrow != blank -%}
@@ -44,7 +44,8 @@
     { "type": "textarea", "id": "description", "label": "Description", "default": "Seasonal availability, planting tips, and project updates delivered to your inbox." },
     { "type": "text",     "id": "placeholder", "label": "Input placeholder", "default": "Your email address" },
     { "type": "text",     "id": "btn_label",   "label": "Button text",  "default": "Subscribe" },
-    { "type": "text",     "id": "disclaimer",  "label": "Disclaimer text (optional)" }
+    { "type": "text",     "id": "disclaimer",  "label": "Disclaimer text (optional)" },
+    { "type": "text", "id": "anchor_id", "label": "Section ID", "info": "Optional. Set a short ID (e.g. \"services\") to use as an anchor link target. Then link to \"#services\" from any button." }
   ],
   "presets": [{ "name": "Newsletter" }]
 }
