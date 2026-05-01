@@ -32,10 +32,25 @@
 <script>
   document.querySelectorAll('.collapsible-item__trigger').forEach(btn => {
     btn.addEventListener('click', function() {
-      const item = this.closest('.collapsible-item');
+      const item   = this.closest('.collapsible-item');
+      const list   = item.closest('.collapsible-list');
       const isOpen = item.classList.contains('open');
-      item.classList.toggle('open', !isOpen);
-      this.setAttribute('aria-expanded', String(!isOpen));
+
+      // Close all items in this list
+      list.querySelectorAll('.collapsible-item').forEach(i => {
+        i.classList.remove('open');
+        i.querySelector('.collapsible-item__trigger').setAttribute('aria-expanded', 'false');
+        const content = i.querySelector('.collapsible-item__content');
+        content.style.maxHeight = '0';
+      });
+
+      // Open the clicked item if it was closed
+      if (!isOpen) {
+        item.classList.add('open');
+        this.setAttribute('aria-expanded', 'true');
+        const content = item.querySelector('.collapsible-item__content');
+        content.style.maxHeight = content.scrollHeight + 'px';
+      }
     });
   });
 </script>

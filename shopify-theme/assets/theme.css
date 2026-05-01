@@ -1802,8 +1802,8 @@ p { color: var(--color-text-light); line-height: 1.75; }
 .collapsible-item.open .collapsible-item__trigger { background: var(--color-cream); color: var(--color-primary); }
 .collapsible-item__chevron { flex-shrink: 0; transition: transform var(--transition); }
 .collapsible-item.open .collapsible-item__chevron { transform: rotate(180deg); }
-.collapsible-item__content { display: none; padding: 0 1.5rem 1.5rem; color: var(--color-text-light); line-height: 1.75; }
-.collapsible-item.open .collapsible-item__content { display: block; }
+.collapsible-item__content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; padding: 0 1.5rem; color: var(--color-text-light); line-height: 1.75; }
+.collapsible-item.open .collapsible-item__content { padding-bottom: 1.5rem; }
 
 /* ── Accessibility ─────────────────────────────────────────── */
 :focus-visible {
