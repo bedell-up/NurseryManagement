@@ -49,6 +49,7 @@ export default function AdminBarcodeScan() {
   const [updateErr, setUpdateErr] = useState(null);  // update failure
   const [camErr, setCamErr] = useState(null);        // camera init failure
   const [camReady, setCamReady] = useState(false);
+  const [camKey, setCamKey] = useState(0);           // increment to force camera restart
   const [count, setCount] = useState(getTodayCount);
   const [lastScan, setLastScan] = useState(() => localStorage.getItem('bd_last_scan'));
   const [confirmed, setConfirmed] = useState(null);  // confirmation summary object
@@ -118,6 +119,7 @@ export default function AdminBarcodeScan() {
     }
 
     let alive = true;
+    setCamErr(null);
 
     (async () => {
       try {
@@ -125,8 +127,9 @@ export default function AdminBarcodeScan() {
         if (!alive || !videoRef.current) return;
 
         const reader = new BrowserMultiFormatReader();
-        const controls = await reader.decodeFromVideoDevice(
-          undefined,
+        // Request back camera explicitly — phones default to front without this
+        const controls = await reader.decodeFromConstraints(
+          { video: { facingMode: { ideal: 'environment' } } },
           videoRef.current,
           (res) => {
             if (!alive || !res) return;
@@ -142,8 +145,10 @@ export default function AdminBarcodeScan() {
         if (!alive) return;
         if (e.name === 'NotAllowedError') {
           setCamErr('Camera permission denied — use manual entry below');
-        } else if (e.name === 'NotFoundError') {
+        } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
           setCamErr('No camera found — use manual entry below');
+        } else if (e.name === 'NotReadableError' || e.name === 'TrackStartError') {
+          setCamErr('Camera in use by another app — use manual entry below');
         } else {
           setCamErr('Camera unavailable — use manual entry below');
         }
@@ -156,7 +161,7 @@ export default function AdminBarcodeScan() {
       controlsRef.current = null;
       setCamReady(false);
     };
-  }, [phase]);
+  }, [phase, camKey]);
 
   // ── Handlers ──────────────────────────────────────────────────────────
   const isPendingRef = useRef(false);
@@ -262,6 +267,14 @@ export default function AdminBarcodeScan() {
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-forest-950/90">
                 <CameraOff size={22} className="text-forest-600" />
                 <p className="text-forest-500 text-xs font-mono text-center px-4">{camErr}</p>
+                {!camErr.includes('HTTPS') && (
+                  <button
+                    onClick={() => { setCamErr(null); setCamReady(false); seenRef.current.clear(); setCamKey(k => k + 1); }}
+                    className="mt-1 bg-forest-800 border border-forest-700 rounded-lg px-3 py-1 text-forest-400 text-xs font-mono hover:text-white transition-colors"
+                  >
+                    Retry camera
+                  </button>
+                )}
               </div>
             )}
             {lookup.isPending && (
