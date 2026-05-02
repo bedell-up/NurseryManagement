@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { inventory as inventoryApi, locations as locationsApi } from '../../api/client';
-import { ArrowRight, Plus, Trash2, CheckCircle, XCircle, ArrowLeftRight } from 'lucide-react';
+import { ArrowRight, Plus, Trash2, CheckCircle, XCircle, ArrowLeftRight, ChevronDown, X } from 'lucide-react';
 
 function emptyLine(key) {
   return { key, variant_id: '', qty: '' };
@@ -10,7 +10,7 @@ function emptyLine(key) {
 function ResultBadge({ r, sourceItems }) {
   const label = sourceItems.find(i => i.variant?.id === r.variant_id);
   const name = label
-    ? `${label.variant?.plant?.common_name} — ${label.variant?.container_size}`
+    ? `${label.variant?.plant?.scientific_name} — ${label.variant?.container_size}`
     : r.variant_id;
   return (
     <div className={`flex items-center gap-2 text-sm py-1 ${r.ok ? 'text-forest-700' : 'text-red-600'}`}>
@@ -25,6 +25,126 @@ function ResultBadge({ r, sourceItems }) {
   );
 }
 
+function PlantCombobox({ sourceItems, fromLoc, value, onChange, disabled }) {
+  const [query, setQuery]       = useState('');
+  const [open, setOpen]         = useState(false);
+  const containerRef            = useRef(null);
+  const inputRef                = useRef(null);
+
+  const selected = sourceItems.find(i => i.variant?.id === value);
+
+  const options = useMemo(() => {
+    if (!query.trim()) return sourceItems;
+    const q = query.toLowerCase();
+    return sourceItems.filter(inv => {
+      const sci    = (inv.variant?.plant?.scientific_name ?? '').toLowerCase();
+      const common = (inv.variant?.plant?.common_name     ?? '').toLowerCase();
+      const size   = (inv.variant?.container_size         ?? '').toLowerCase();
+      return sci.includes(q) || common.includes(q) || size.includes(q);
+    });
+  }, [sourceItems, query]);
+
+  function displayLabel(inv) {
+    if (!inv) return '';
+    const sci    = inv.variant?.plant?.scientific_name ?? '';
+    const common = inv.variant?.plant?.common_name     ?? '';
+    const size   = inv.variant?.container_size         ?? '';
+    return common ? `${sci} (${common}) — ${size}` : `${sci} — ${size}`;
+  }
+
+  function selectOption(inv) {
+    onChange(inv.variant?.id ?? '');
+    setQuery('');
+    setOpen(false);
+  }
+
+  function clear(e) {
+    e.stopPropagation();
+    onChange('');
+    setQuery('');
+    inputRef.current?.focus();
+  }
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+        setQuery('');
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  function handleInputChange(e) {
+    setQuery(e.target.value);
+    if (!open) setOpen(true);
+    if (value) onChange(''); // clear selection when user types
+  }
+
+  const placeholder = disabled
+    ? '— no stock at this location —'
+    : '— type to search plants —';
+
+  const inputValue = open ? query : (selected ? displayLabel(selected) : '');
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <div
+        className={`input flex items-center gap-1 pr-2 cursor-text ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={() => { if (!disabled) { setOpen(true); inputRef.current?.focus(); } }}
+      >
+        <input
+          ref={inputRef}
+          type="text"
+          className="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder-forest-400"
+          placeholder={placeholder}
+          value={inputValue}
+          onChange={handleInputChange}
+          onFocus={() => { if (!disabled) setOpen(true); }}
+          disabled={disabled}
+          autoComplete="off"
+        />
+        {selected && !open && (
+          <button type="button" onClick={clear} className="shrink-0 text-forest-400 hover:text-forest-700">
+            <X size={13} />
+          </button>
+        )}
+        {!selected && <ChevronDown size={13} className="shrink-0 text-forest-400" />}
+      </div>
+
+      {open && !disabled && (
+        <ul className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-forest-200 bg-white shadow-lg text-sm">
+          {options.length === 0 ? (
+            <li className="px-3 py-2 text-forest-400 italic">No matches</li>
+          ) : (
+            options.map(inv => {
+              const sci    = inv.variant?.plant?.scientific_name ?? '';
+              const common = inv.variant?.plant?.common_name     ?? '';
+              const size   = inv.variant?.container_size         ?? '';
+              const split  = inv.location_splits?.find(s => s.location.toLowerCase() === fromLoc.toLowerCase());
+              const qty    = split?.quantity ?? 0;
+              return (
+                <li
+                  key={inv.variant?.id}
+                  onMouseDown={() => selectOption(inv)}
+                  className={`px-3 py-2 cursor-pointer hover:bg-forest-50 ${value === inv.variant?.id ? 'bg-forest-100' : ''}`}
+                >
+                  <span className="font-medium italic text-forest-900">{sci}</span>
+                  {common && <span className="text-forest-500 ml-1">({common})</span>}
+                  <span className="text-forest-400 ml-1">— {size}</span>
+                  <span className="float-right text-forest-400 text-xs">{qty} avail.</span>
+                </li>
+              );
+            })
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function AdminInventoryTransfer() {
   const [fromLoc, setFromLoc]   = useState('');
   const [toLoc,   setToLoc]     = useState('');
@@ -32,7 +152,6 @@ export default function AdminInventoryTransfer() {
   const [nextKey, setNextKey]   = useState(1);
   const [results, setResults]   = useState(null);
 
-  // All active locations
   const { data: locsData } = useQuery({
     queryKey: ['locations'],
     queryFn:  () => locationsApi.list({ active: true }).then(r => r.data),
@@ -40,7 +159,6 @@ export default function AdminInventoryTransfer() {
   });
   const locationNames = (locsData ?? []).map(l => l.name);
 
-  // Inventory at the selected from-location
   const { data: sourceData, isFetching: loadingSource } = useQuery({
     queryKey: ['inventory', 'by-location', fromLoc],
     queryFn:  () => inventoryApi.byLocation(fromLoc).then(r => r.data),
@@ -174,23 +292,13 @@ export default function AdminInventoryTransfer() {
                 return (
                   <tr key={line.key}>
                     <td className="px-4 py-2.5">
-                      <select
-                        className="input w-full text-sm"
+                      <PlantCombobox
+                        sourceItems={sourceItems}
+                        fromLoc={fromLoc}
                         value={line.variant_id}
-                        onChange={e => setLine(line.key, 'variant_id', e.target.value)}
+                        onChange={v => setLine(line.key, 'variant_id', v)}
                         disabled={sourceItems.length === 0}
-                      >
-                        <option value="">{sourceItems.length === 0 ? '— no stock at this location —' : '— select plant —'}</option>
-                        {sourceItems.map(inv => {
-                          const split = inv.location_splits?.find(s => s.location.toLowerCase() === fromLoc.toLowerCase());
-                          const qty = split?.quantity ?? 0;
-                          return (
-                            <option key={inv.variant?.id} value={inv.variant?.id}>
-                              {inv.variant?.plant?.common_name} — {inv.variant?.container_size} ({qty} available)
-                            </option>
-                          );
-                        })}
-                      </select>
+                      />
                     </td>
                     <td className="px-4 py-2.5 text-center">
                       {line.variant_id
