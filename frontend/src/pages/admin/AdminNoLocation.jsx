@@ -1,27 +1,59 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventory as inventoryApi, locations as locationsApi } from '../../api/client';
-import { MapPinOff, MapPin, CheckCircle } from 'lucide-react';
+import { MapPinOff, MapPin, CheckCircle, Plus, X } from 'lucide-react';
 
 function Row({ item, locationNames, onSaved }) {
-  const [loc, setLoc]       = useState('');
-  const [saved, setSaved]   = useState(false);
-  const [error, setError]   = useState('');
+  const total = item.quantity_on_hand;
+  const [splits,  setSplits]  = useState([{ id: 0, loc: '', qty: String(total) }]);
+  const [nextId,  setNextId]  = useState(1);
+  const [error,   setError]   = useState('');
+  const [saved,   setSaved]   = useState(false);
+
+  const allocated = splits.reduce((sum, s) => sum + (parseInt(s.qty, 10) || 0), 0);
+  const remaining = total - allocated;
+
+  function addSplit() {
+    setSplits(prev => [...prev, { id: nextId, loc: '', qty: String(Math.max(0, remaining)) }]);
+    setNextId(k => k + 1);
+  }
+
+  function removeSplit(id) {
+    setSplits(prev => prev.filter(s => s.id !== id));
+    setError('');
+  }
+
+  function updateSplit(id, field, value) {
+    setSplits(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+    setError('');
+  }
 
   const mutation = useMutation({
-    mutationFn: () =>
-      Promise.all([
-        inventoryApi.update(item.id, { location: loc }),
-        inventoryApi.setLocationSplits(item.id, [{ location: loc, quantity: item.quantity_on_hand }]),
-      ]),
+    mutationFn: () => {
+      const valid = splits.filter(s => s.loc && parseInt(s.qty, 10) > 0);
+      return Promise.all([
+        inventoryApi.update(item.id, { location: valid[0].loc }),
+        inventoryApi.setLocationSplits(item.id, valid.map(s => ({
+          location: s.loc,
+          quantity: parseInt(s.qty, 10),
+        }))),
+      ]);
+    },
     onSuccess: () => { setSaved(true); onSaved(); },
     onError:   (e) => setError(e.response?.data?.error || 'Failed to save'),
   });
 
+  function handleSave() {
+    const valid = splits.filter(s => s.loc && parseInt(s.qty, 10) > 0);
+    if (!valid.length)        return setError('Select at least one location');
+    if (allocated !== total)  return setError(`Quantities must total ${total}`);
+    mutation.mutate();
+  }
+
   if (saved) return null;
 
   return (
-    <tr className="hover:bg-forest-50/50 transition-colors">
+    <tr className="hover:bg-forest-50/50 transition-colors align-top">
       <td className="px-4 py-3 font-medium text-forest-900">
         {item.variant?.plant?.common_name}
         {item.variant?.plant?.scientific_name && (
@@ -30,27 +62,64 @@ function Row({ item, locationNames, onSaved }) {
       </td>
       <td className="px-4 py-3 text-sm text-forest-600">{item.variant?.container_size}</td>
       <td className="px-4 py-3 text-sm font-mono text-forest-500">{item.variant?.sku}</td>
-      <td className="px-4 py-3 text-center font-semibold text-forest-800">{item.quantity_on_hand}</td>
+      <td className="px-4 py-3 text-center font-semibold text-forest-800">{total}</td>
       <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          <select
-            className="input flex-1 text-sm"
-            value={loc}
-            onChange={e => { setLoc(e.target.value); setError(''); }}
-          >
-            <option value="">— assign location —</option>
-            {locationNames.map(n => <option key={n} value={n}>{n}</option>)}
-          </select>
+        <div className="space-y-1.5">
+          {splits.map(split => (
+            <div key={split.id} className="flex items-center gap-1.5">
+              <select
+                className="input flex-1 text-sm"
+                value={split.loc}
+                onChange={e => updateSplit(split.id, 'loc', e.target.value)}
+              >
+                <option value="">— location —</option>
+                {locationNames.map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+              <input
+                type="number"
+                min="0"
+                max={total}
+                className="input w-16 text-sm text-center"
+                value={split.qty}
+                onChange={e => updateSplit(split.id, 'qty', e.target.value)}
+              />
+              {splits.length > 1 && (
+                <button
+                  onClick={() => removeSplit(split.id)}
+                  className="text-forest-400 hover:text-red-500 transition-colors p-0.5 shrink-0"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          ))}
+
+          <div className="flex items-center gap-2 pt-0.5">
+            <button
+              onClick={addSplit}
+              disabled={remaining <= 0}
+              className="text-xs text-forest-500 hover:text-forest-700 flex items-center gap-0.5 disabled:opacity-40 transition-colors"
+            >
+              <Plus size={11} /> Split location
+            </button>
+            {remaining !== 0 && (
+              <span className={`text-xs font-mono ml-auto ${remaining > 0 ? 'text-amber-600' : 'text-red-500'}`}>
+                {remaining > 0 ? `${remaining} unassigned` : `${Math.abs(remaining)} over`}
+              </span>
+            )}
+          </div>
+
           <button
-            onClick={() => { if (loc) mutation.mutate(); else setError('Select a location'); }}
-            disabled={mutation.isPending || !loc}
-            className="btn-primary text-sm px-3 py-1.5 flex items-center gap-1 shrink-0"
+            onClick={handleSave}
+            disabled={mutation.isPending || allocated !== total}
+            className="btn-primary text-sm px-3 py-1.5 flex items-center gap-1 w-full justify-center mt-1"
           >
             <MapPin size={13} />
-            {mutation.isPending ? 'Saving…' : 'Set'}
+            {mutation.isPending ? 'Saving…' : 'Set Location'}
           </button>
+
+          {error && <p className="text-red-500 text-xs mt-0.5">{error}</p>}
         </div>
-        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
       </td>
     </tr>
   );
@@ -58,8 +127,8 @@ function Row({ item, locationNames, onSaved }) {
 
 export default function AdminNoLocation() {
   const qc = useQueryClient();
-  const [bulkLoc,   setBulkLoc]   = useState('');
-  const [bulkDone,  setBulkDone]  = useState(0);
+  const [bulkLoc,     setBulkLoc]     = useState('');
+  const [bulkDone,    setBulkDone]    = useState(0);
   const [bulkRunning, setBulkRunning] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
@@ -153,7 +222,7 @@ export default function AdminNoLocation() {
                 <th className="px-4 py-3 text-left font-medium text-forest-600">Size</th>
                 <th className="px-4 py-3 text-left font-medium text-forest-600">SKU</th>
                 <th className="px-4 py-3 text-center font-medium text-forest-600">Qty</th>
-                <th className="px-4 py-3 text-left font-medium text-forest-600">Assign Location</th>
+                <th className="px-4 py-3 text-left font-medium text-forest-600">Assign to Location(s)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-forest-50">
@@ -175,7 +244,7 @@ export default function AdminNoLocation() {
 
       <p className="mt-3 text-xs text-forest-400 flex items-center gap-1.5">
         <MapPinOff size={12} />
-        Setting a location here assigns all on-hand quantity to that location and creates a location split.
+        Qty defaults to full on-hand amount. Use "Split location" to divide across multiple locations — quantities must total the on-hand amount.
       </p>
     </div>
   );
