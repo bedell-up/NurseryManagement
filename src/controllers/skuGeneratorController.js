@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { Plant, PlantVariant, PlantTypeDefault, TrayType, Vendor } = require('../models');
+const { Plant, PlantVariant, PlantTypeDefault, TrayType, Vendor, VendorSku } = require('../models');
 
 function buildSkuPrefix(plant) {
   const genus = (plant.genus || '').trim();
@@ -27,10 +27,10 @@ function buildSkuPrefix(plant) {
   return `${g3}${s3}`;
 }
 
-function buildSku(plant, skuCode, vendorCode) {
+function buildSku(plant, skuCode) {
   const prefix = buildSkuPrefix(plant);
   if (!prefix || !skuCode) return null;
-  return vendorCode ? `${prefix}-${skuCode}-${vendorCode}` : `${prefix}-${skuCode}`;
+  return `${prefix}-${skuCode}`;
 }
 
 async function loadData(vendorId) {
@@ -51,7 +51,7 @@ async function loadData(vendorId) {
   return { plants, defaultsByType, trayByName, vendor };
 }
 
-function buildRows(plants, defaultsByType, trayByName, vendorCode) {
+function buildRows(plants, defaultsByType, trayByName) {
   const rows = [];
   for (const plant of plants) {
     const ptd = defaultsByType[plant.plant_type];
@@ -66,7 +66,7 @@ function buildRows(plants, defaultsByType, trayByName, vendorCode) {
       const tt = trayByName[`${category}:${name}`];
       if (!tt?.sku_code) continue;
 
-      const sku = buildSku(plant, tt.sku_code, vendorCode);
+      const sku = buildSku(plant, tt.sku_code);
       if (!sku) continue;
 
       rows.push({ plant, containerSize: name, category, tt, sku });
@@ -83,8 +83,7 @@ async function preview(req, res) {
     (await PlantVariant.findAll({ attributes: ['sku'] })).map(v => v.sku).filter(Boolean)
   );
 
-  const vendorCode = vendor?.code || null;
-  const rows = buildRows(plants, defaultsByType, trayByName, vendorCode).map(r => ({
+  const rows = buildRows(plants, defaultsByType, trayByName).map(r => ({
     plant_id: r.plant.id,
     plant_name: r.plant.common_name,
     scientific_name: r.plant.scientific_name,
@@ -92,6 +91,7 @@ async function preview(req, res) {
     container_size: r.containerSize,
     category: r.category,
     sku: r.sku,
+    vendor_sku: vendor?.code ? `${r.sku}-${vendor.code}` : null,
     exists: existingSkus.has(r.sku),
   }));
 
@@ -102,24 +102,41 @@ async function generate(req, res) {
   const { vendor_id } = req.body;
   const { plants, defaultsByType, trayByName, vendor } = await loadData(vendor_id);
 
-  const existingSkus = new Set(
-    (await PlantVariant.findAll({ attributes: ['sku'] })).map(v => v.sku).filter(Boolean)
-  );
+  const existingVariants = await PlantVariant.findAll({ attributes: ['id', 'sku'] });
+  const existingSkuMap = new Map(existingVariants.map(v => [v.sku, v.id]));
 
+  const rows = buildRows(plants, defaultsByType, trayByName);
   const vendorCode = vendor?.code || null;
-  const rows = buildRows(plants, defaultsByType, trayByName, vendorCode);
 
   let created = 0;
   let skipped = 0;
+  let vendorSkusCreated = 0;
+  let vendorSkusSkipped = 0;
 
   for (const { plant, containerSize, sku } of rows) {
-    if (existingSkus.has(sku)) { skipped++; continue; }
-    await PlantVariant.create({ plant_id: plant.id, container_size: containerSize, sku, is_active: true });
-    existingSkus.add(sku);
-    created++;
+    let variantId = existingSkuMap.get(sku);
+
+    if (!variantId) {
+      const variant = await PlantVariant.create({ plant_id: plant.id, container_size: containerSize, sku, is_active: true });
+      existingSkuMap.set(sku, variant.id);
+      variantId = variant.id;
+      created++;
+    } else {
+      skipped++;
+    }
+
+    // When a vendor is selected, create/update a VendorSku record
+    if (vendorCode) {
+      const vendorSku = `${sku}-${vendorCode}`;
+      const [, wasCreated] = await VendorSku.findOrCreate({
+        where: { variant_id: variantId, vendor_code: vendorCode },
+        defaults: { vendor_name: vendor.name, vendor_code: vendorCode, sku: vendorSku },
+      });
+      if (wasCreated) vendorSkusCreated++; else vendorSkusSkipped++;
+    }
   }
 
-  res.json({ created, skipped });
+  res.json({ created, skipped, vendorSkusCreated, vendorSkusSkipped });
 }
 
 module.exports = { preview, generate };

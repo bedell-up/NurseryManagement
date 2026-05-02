@@ -1,4 +1,5 @@
 const { NurseryOrder, NurseryOrderItem, PlantVariant, Plant, Inventory, InventoryLog, Pricing, User } = require('../models');
+const { sendOrderEmail } = require('../services/emailService');
 
 const ITEM_INCLUDE = {
   model: NurseryOrderItem,
@@ -158,4 +159,15 @@ async function remove(req, res) {
   res.json({ message: 'Deleted' });
 }
 
-module.exports = { list, get, create, update, fulfill, cancel, remove };
+async function emailReport(req, res) {
+  const order = await NurseryOrder.findByPk(req.params.id, { include: [ITEM_INCLUDE] });
+  if (!order) return res.status(404).json({ error: 'Not found' });
+
+  const to = req.body?.to || order.customer_email;
+  if (!to) return res.status(400).json({ error: 'No recipient — provide a "to" address or add an email to the order' });
+
+  await sendOrderEmail(order, to);
+  res.json({ message: `Order #${order.order_number} sent to ${to}` });
+}
+
+module.exports = { list, get, create, update, fulfill, cancel, remove, emailReport };

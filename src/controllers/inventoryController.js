@@ -21,7 +21,7 @@ async function pushToShopify(variant, newQty) {
 const shopifyService = require('../services/shopifyService');
 
 async function list(req, res) {
-  const { low_stock, page = 1, limit = 100 } = req.query;
+  const { low_stock, page = 1, limit = 100, location } = req.query;
 
   const inventoryWhere = {};
   if (low_stock === 'true') {
@@ -35,23 +35,37 @@ async function list(req, res) {
   }
 
   const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+
+  // When filtering by location, join against location_splits
+  const splitInclude = location
+    ? {
+        model: InventoryLocationSplit,
+        as: 'location_splits',
+        where: { location: { [Op.iLike]: location } },
+        required: true,
+      }
+    : {
+        model: InventoryLocationSplit,
+        as: 'location_splits',
+        attributes: ['id', 'location', 'quantity'],
+      };
+
   const { count, rows } = await Inventory.findAndCountAll({
     where: inventoryWhere,
     include: [
       {
         model: PlantVariant,
         as: 'variant',
+        where: { is_active: true },
+        required: true,
         include: [{ model: Plant, as: 'plant', attributes: ['id', 'common_name', 'scientific_name'] }],
       },
-      {
-        model: InventoryLocationSplit,
-        as: 'location_splits',
-        attributes: ['id', 'location', 'quantity'],
-      },
+      splitInclude,
     ],
     order: [['quantity_on_hand', 'ASC']],
     limit: parseInt(limit, 10),
     offset,
+    distinct: true,
   });
 
   res.json({ total: count, page: parseInt(page, 10), inventory: rows });
@@ -390,4 +404,97 @@ async function countReportUsers(req, res) {
   res.json({ users });
 }
 
-module.exports = { list, adjust, update, syncToShopify, bulkCount, setLocationSplits, barcodeSheet, countReport, countReportUsers };
+// POST /inventory/transfer — move qty from one location split to another without changing total on-hand
+async function transfer(req, res) {
+  const { from_location, to_location, items } = req.body;
+  if (!from_location?.trim()) return res.status(400).json({ error: 'from_location is required' });
+  if (!to_location?.trim())   return res.status(400).json({ error: 'to_location is required' });
+  if (from_location.trim().toLowerCase() === to_location.trim().toLowerCase()) {
+    return res.status(400).json({ error: 'From and to locations must be different' });
+  }
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'items array is required' });
+  }
+
+  const results = [];
+  await sequelize.transaction(async (t) => {
+    for (const item of items) {
+      const { variant_id, quantity } = item;
+      const qty = parseInt(quantity, 10);
+      if (!variant_id || isNaN(qty) || qty <= 0) {
+        results.push({ variant_id, error: 'Invalid quantity' }); continue;
+      }
+
+      const inv = await Inventory.findOne({
+        where: { variant_id },
+        include: [{ model: InventoryLocationSplit, as: 'location_splits' }],
+        transaction: t,
+      });
+      if (!inv) { results.push({ variant_id, error: 'Inventory record not found' }); continue; }
+
+      const fromSplit = inv.location_splits.find(
+        s => s.location.toLowerCase() === from_location.trim().toLowerCase()
+      );
+      const available = fromSplit?.quantity ?? 0;
+      if (available < qty) {
+        results.push({ variant_id, error: `Only ${available} available at ${from_location}` }); continue;
+      }
+
+      // Decrement / remove source split
+      if (available === qty) {
+        await fromSplit.destroy({ transaction: t });
+      } else {
+        await fromSplit.update({ quantity: available - qty }, { transaction: t });
+      }
+
+      // Upsert destination split
+      const [toSplit] = await InventoryLocationSplit.findOrCreate({
+        where: { inventory_id: inv.id, location: to_location.trim() },
+        defaults: { quantity: 0 },
+        transaction: t,
+      });
+      await toSplit.update({ quantity: toSplit.quantity + qty }, { transaction: t });
+
+      // Audit log — qty_change is 0 because total on-hand doesn't change
+      await InventoryLog.create({
+        variant_id,
+        user_id: req.user?.id || null,
+        change_type: 'location_transfer',
+        quantity_before: inv.quantity_on_hand,
+        quantity_change: 0,
+        quantity_after:  inv.quantity_on_hand,
+        location: to_location.trim(),
+        notes: `Transferred ${qty} from "${from_location.trim()}" to "${to_location.trim()}"`,
+      }, { transaction: t });
+
+      results.push({ variant_id, transferred: qty, ok: true });
+    }
+  });
+
+  const failed = results.filter(r => r.error);
+  res.status(failed.length > 0 && failed.length === items.length ? 400 : 200)
+     .json({ results });
+}
+
+// GET /inventory/without-location — items with qty > 0 but no location split assigned
+async function withoutLocation(req, res) {
+  const rows = await Inventory.findAll({
+    where: { quantity_on_hand: { [Op.gt]: 0 } },
+    include: [
+      {
+        model: PlantVariant,
+        as: 'variant',
+        where: { is_active: true },
+        required: true,
+        include: [{ model: Plant, as: 'plant', attributes: ['id', 'common_name', 'scientific_name'] }],
+      },
+      { model: InventoryLocationSplit, as: 'location_splits', required: false },
+    ],
+    order: [[{ model: PlantVariant, as: 'variant' }, { model: Plant, as: 'plant' }, 'common_name', 'ASC']],
+  });
+
+  const unlocated = rows.filter(r => !r.location_splits || r.location_splits.length === 0);
+  res.json({ count: unlocated.length, inventory: unlocated });
+}
+
+module.exports = { list, adjust, update, syncToShopify, bulkCount, setLocationSplits, barcodeSheet, countReport, countReportUsers, transfer, withoutLocation };

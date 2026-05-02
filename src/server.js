@@ -14,6 +14,7 @@ async function start() {
       DO $$ BEGIN
         IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_inventory_logs_change_type') THEN
           ALTER TYPE "enum_inventory_logs_change_type" ADD VALUE IF NOT EXISTS 'landscaping_transfer';
+          ALTER TYPE "enum_inventory_logs_change_type" ADD VALUE IF NOT EXISTS 'location_transfer';
         END IF;
       END $$;
     `).catch(() => {});
@@ -33,6 +34,23 @@ async function start() {
     // Sync models — use migrations in production
     await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
     console.log('Models synced');
+
+    // Seed default pot size pricing if table is empty
+    await sequelize.query(`
+      INSERT INTO pot_size_costs (id, label, retail_price, wholesale_price, sort_order, created_at, updated_at)
+      SELECT gen_random_uuid(), t.label, t.retail, t.wholesale, t.sort_order, NOW(), NOW()
+      FROM (VALUES
+        ('2⅜" Bandpot',       6.00,  NULL,  1),
+        ('2¾" Bandpot',       7.00,  NULL,  2),
+        ('3.5" Container',    7.00,  NULL,  3),
+        ('4" Band',           7.00,  NULL,  4),
+        ('4" Tall Band',      NULL,  NULL,  5),
+        ('Qt (Quart)',         NULL,  NULL,  6),
+        ('1 gal Grass',      12.00,  NULL,  7),
+        ('1 gal Tree/Shrub', 15.00,  NULL,  8)
+      ) AS t(label, retail, wholesale, sort_order)
+      WHERE NOT EXISTS (SELECT 1 FROM pot_size_costs LIMIT 1);
+    `).catch(() => {});
 
     // Seed default plant types if none exist yet
     await sequelize.query(`

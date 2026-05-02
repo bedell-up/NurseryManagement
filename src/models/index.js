@@ -25,6 +25,9 @@ const JobPhoto = require('./JobPhoto');
 const Merchandise = require('./Merchandise');
 const NurseryOrder = require('./NurseryOrder');
 const NurseryOrderItem = require('./NurseryOrderItem');
+const VendorOrder = require('./VendorOrder');
+const VendorOrderItem = require('./VendorOrderItem');
+const PotSizeCost = require('./PotSizeCost');
 
 // Plant -> PlantVariant (one plant, many size/container variants)
 Plant.hasMany(PlantVariant, { foreignKey: 'plant_id', as: 'variants' });
@@ -112,10 +115,25 @@ NurseryOrderItem.belongsTo(NurseryOrder, { foreignKey: 'order_id', as: 'order' }
 PlantVariant.hasMany(NurseryOrderItem, { foreignKey: 'variant_id', as: 'nursery_order_items' });
 NurseryOrderItem.belongsTo(PlantVariant, { foreignKey: 'variant_id', as: 'variant' });
 
+// VendorOrder -> Vendor
+Vendor.hasMany(VendorOrder, { foreignKey: 'vendor_id', as: 'orders' });
+VendorOrder.belongsTo(Vendor, { foreignKey: 'vendor_id', as: 'vendor' });
+
+// VendorOrder -> VendorOrderItems
+VendorOrder.hasMany(VendorOrderItem, { foreignKey: 'order_id', as: 'items' });
+VendorOrderItem.belongsTo(VendorOrder, { foreignKey: 'order_id', as: 'order' });
+
+// VendorOrderItem -> PlantVariant
+PlantVariant.hasMany(VendorOrderItem, { foreignKey: 'variant_id', as: 'vendor_order_items' });
+VendorOrderItem.belongsTo(PlantVariant, { foreignKey: 'variant_id', as: 'variant' });
+
 module.exports = {
   Merchandise,
   NurseryOrder,
   NurseryOrderItem,
+  VendorOrder,
+  VendorOrderItem,
+  PotSizeCost,
   Vendor,
   TrayType,
   SeedLot,

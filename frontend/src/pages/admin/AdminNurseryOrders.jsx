@@ -4,7 +4,8 @@ import { nurseryOrders as ordersApi, plants as plantsApi, locations as locations
 import Modal from '../../components/ui/Modal';
 import Confirm from '../../components/ui/Confirm';
 import PlantSearchSelect from '../../components/admin/PlantSearchSelect';
-import { Plus, Pencil, Trash2, CheckCircle, XCircle, ChevronRight, ChevronDown, ShoppingBag } from 'lucide-react';
+import { generateOrderPdf } from '../../utils/nurseryOrderPdf';
+import { Plus, Pencil, Trash2, CheckCircle, XCircle, ChevronRight, ChevronDown, ShoppingBag, Printer, Mail } from 'lucide-react';
 
 const STATUS_COLORS = {
   draft:     'bg-forest-100 text-forest-600',
@@ -267,9 +268,8 @@ function OrderForm({ order, onClose }) {
 
 // ─── Order Card ───────────────────────────────────────────────────────────────
 
-function OrderCard({ order, onEdit, onFulfill, onCancel, onDelete }) {
+function OrderCard({ order, onEdit, onFulfill, onCancel, onDelete, onEmail }) {
   const [expanded, setExpanded] = useState(false);
-  const qc = useQueryClient();
 
   const isFulfillable = order.status === 'draft' || order.status === 'confirmed';
   const itemCount = order.items?.length ?? 0;
@@ -315,6 +315,22 @@ function OrderCard({ order, onEdit, onFulfill, onCancel, onDelete }) {
           {isFulfillable && (
             <button onClick={() => onEdit(order)} className="btn-ghost px-2 py-1.5 text-forest-500 hover:text-forest-800" title="Edit">
               <Pencil size={14} />
+            </button>
+          )}
+          <button
+            onClick={() => generateOrderPdf(order)}
+            className="btn-ghost px-2 py-1.5 text-forest-500 hover:text-forest-800"
+            title="Download PDF report"
+          >
+            <Printer size={14} />
+          </button>
+          {order.customer_email && (
+            <button
+              onClick={() => onEmail(order)}
+              className="btn-ghost px-2 py-1.5 text-forest-500 hover:text-forest-800"
+              title={`Email report to ${order.customer_email}`}
+            >
+              <Mail size={14} />
             </button>
           )}
           {order.status !== 'fulfilled' && (
@@ -398,6 +414,9 @@ export default function AdminNurseryOrders() {
   const [addOpen,      setAddOpen]      = useState(false);
   const [fulfillTarget, setFulfillTarget] = useState(null);
   const [deleteTarget,  setDeleteTarget]  = useState(null);
+  const [emailTarget,   setEmailTarget]   = useState(null);
+  const [emailStatus,   setEmailStatus]   = useState('');  // '', 'sending', 'sent', 'error'
+  const [emailError,    setEmailError]    = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['nursery-orders', statusFilter],
@@ -420,6 +439,18 @@ export default function AdminNurseryOrders() {
     mutationFn: (id) => ordersApi.remove(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['nursery-orders'] }); setDeleteTarget(null); },
   });
+
+  const handleSendEmail = async () => {
+    setEmailStatus('sending');
+    setEmailError('');
+    try {
+      await ordersApi.emailReport(emailTarget.id);
+      setEmailStatus('sent');
+    } catch (e) {
+      setEmailStatus('error');
+      setEmailError(e.response?.data?.error || 'Failed to send email');
+    }
+  };
 
   return (
     <div className="p-6 max-w-screen-lg mx-auto">
@@ -470,6 +501,7 @@ export default function AdminNurseryOrders() {
             onFulfill={setFulfillTarget}
             onCancel={() => {}}
             onDelete={setDeleteTarget}
+            onEmail={(o) => { setEmailTarget(o); setEmailStatus(''); setEmailError(''); }}
           />
         ))}
       </div>
@@ -503,6 +535,48 @@ export default function AdminNurseryOrders() {
           onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
           onCancel={() => setDeleteTarget(null)}
         />
+      )}
+
+      {emailTarget && (
+        <Modal title={`Email Order #${emailTarget.order_number}`} onClose={() => setEmailTarget(null)} size="sm">
+          <div className="space-y-4">
+            {emailStatus === 'sent' ? (
+              <div className="text-center py-4">
+                <CheckCircle size={32} className="mx-auto text-green-500 mb-2" />
+                <p className="text-forest-800 font-medium">Email sent!</p>
+                <p className="text-forest-500 text-sm mt-1">Order report sent to {emailTarget.customer_email}</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-forest-700">
+                  Send a formatted order report to:
+                </p>
+                <p className="font-medium text-forest-900 bg-forest-50 px-3 py-2 rounded text-sm">
+                  {emailTarget.customer_email}
+                </p>
+                {emailError && (
+                  <p className="text-red-600 text-sm bg-red-50 rounded px-3 py-2">{emailError}</p>
+                )}
+                <div className="flex justify-end gap-3 pt-1 border-t border-forest-100">
+                  <button onClick={() => setEmailTarget(null)} className="btn-secondary">Cancel</button>
+                  <button
+                    onClick={handleSendEmail}
+                    disabled={emailStatus === 'sending'}
+                    className="btn-primary flex items-center gap-1.5"
+                  >
+                    <Mail size={14} />
+                    {emailStatus === 'sending' ? 'Sending…' : 'Send Email'}
+                  </button>
+                </div>
+              </>
+            )}
+            {emailStatus === 'sent' && (
+              <div className="flex justify-end pt-1 border-t border-forest-100">
+                <button onClick={() => setEmailTarget(null)} className="btn-secondary">Close</button>
+              </div>
+            )}
+          </div>
+        </Modal>
       )}
     </div>
   );

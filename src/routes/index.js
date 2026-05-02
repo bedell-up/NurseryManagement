@@ -59,6 +59,8 @@ const jobPhotoCtrl    = require('../controllers/jobPhotoController');
 const scanCtrl        = require('../controllers/scanController');
 const merchandiseCtrl    = require('../controllers/merchandiseController');
 const nurseryOrderCtrl   = require('../controllers/nurseryOrderController');
+const vendorOrderCtrl    = require('../controllers/vendorOrderController');
+const potSizeCostCtrl    = require('../controllers/potSizeCostController');
 
 // --- Auth ---
 router.post('/auth/login', authCtrl.login);
@@ -81,6 +83,8 @@ router.get('/plant-type-defaults', authenticate, plantTypeDefaultCtrl.list);
 router.put('/plant-type-defaults/:plant_type', authenticate, requireRole('admin', 'manager'), plantTypeDefaultCtrl.upsert);
 
 // --- Plants (public read, protected write) ---
+router.get('/plants/duplicates', authenticate, requireRole('admin', 'manager'), plantCtrl.duplicates);
+router.post('/plants/merge', authenticate, requireRole('admin', 'manager'), plantCtrl.merge);
 router.get('/plants', plantCtrl.list);
 router.get('/plants/:id', plantCtrl.get);
 router.post('/plants', authenticate, requireRole('admin', 'manager'), plantCtrl.create);
@@ -92,6 +96,8 @@ router.delete('/plants/:id', authenticate, requireRole('admin'), plantCtrl.remov
 router.get('/inventory/barcode-sheet', authenticate, inventoryCtrl.barcodeSheet);
 router.get('/inventory/count-report/users', authenticate, inventoryCtrl.countReportUsers);
 router.get('/inventory/count-report', authenticate, inventoryCtrl.countReport);
+router.get('/inventory/without-location', authenticate, inventoryCtrl.withoutLocation);
+router.post('/inventory/transfer', authenticate, requireRole('admin', 'manager', 'staff'), inventoryCtrl.transfer);
 router.get('/inventory', authenticate, inventoryCtrl.list);
 router.post('/inventory/adjust', authenticate, requireRole('admin', 'manager', 'staff'), inventoryCtrl.adjust);
 router.post('/inventory/count', authenticate, requireRole('admin', 'manager', 'staff'), inventoryCtrl.bulkCount);
@@ -242,7 +248,24 @@ router.post('/nursery-orders',                 authenticate, requireRole('admin'
 router.put('/nursery-orders/:id',              authenticate, requireRole('admin','manager','staff'), nurseryOrderCtrl.update);
 router.post('/nursery-orders/:id/fulfill',     authenticate, requireRole('admin','manager'), nurseryOrderCtrl.fulfill);
 router.post('/nursery-orders/:id/cancel',      authenticate, requireRole('admin','manager'), nurseryOrderCtrl.cancel);
+router.post('/nursery-orders/:id/email',       authenticate, requireRole('admin','manager','staff'), nurseryOrderCtrl.emailReport);
 router.delete('/nursery-orders/:id',           authenticate, requireRole('admin','manager'), nurseryOrderCtrl.remove);
+
+// --- Vendor Orders ---
+router.get('/vendor-orders',                        authenticate, vendorOrderCtrl.list);
+router.get('/vendor-orders/:id',                    authenticate, vendorOrderCtrl.get);
+router.post('/vendor-orders',                       authenticate, requireRole('admin','manager','staff'), vendorOrderCtrl.create);
+router.put('/vendor-orders/:id',                    authenticate, requireRole('admin','manager','staff'), vendorOrderCtrl.update);
+router.post('/vendor-orders/:id/mark-ordered',      authenticate, requireRole('admin','manager','staff'), vendorOrderCtrl.markOrdered);
+router.post('/vendor-orders/:id/receive',           authenticate, requireRole('admin','manager'), vendorOrderCtrl.receive);
+router.post('/vendor-orders/:id/cancel',            authenticate, requireRole('admin','manager'), vendorOrderCtrl.cancel);
+router.delete('/vendor-orders/:id',                 authenticate, requireRole('admin','manager'), vendorOrderCtrl.remove);
+
+// --- Pot Size Pricing ---
+router.get('/pot-size-costs',      authenticate, potSizeCostCtrl.list);
+router.post('/pot-size-costs',     authenticate, requireRole('admin','manager'), potSizeCostCtrl.create);
+router.put('/pot-size-costs/:id',  authenticate, requireRole('admin','manager'), potSizeCostCtrl.update);
+router.delete('/pot-size-costs/:id', authenticate, requireRole('admin','manager'), potSizeCostCtrl.remove);
 
 // --- Health ---
 router.get('/health', (req, res) => res.json({ status: 'ok', app: 'natives', timestamp: new Date() }));

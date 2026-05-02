@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Package, DollarSign,
-  ShoppingBag, Truck, Star, Upload, LogOut, Menu, X, Leaf, ClipboardList, Sprout, Building2, MapPin, LayoutGrid, Wheat, Users, Shuffle, Tags, TreePine, ChevronDown, Map, ScanBarcode, Barcode, ShoppingCart, BarChart2, Receipt, Layers
+  ShoppingBag, Truck, Star, Upload, LogOut, Menu, X, Leaf, ClipboardList, Sprout, Building2, MapPin, LayoutGrid, Wheat, Users, Shuffle, Tags, TreePine, ChevronDown, Map, ScanBarcode, Barcode, ShoppingCart, BarChart2, Receipt, Layers, PackageCheck, ArrowLeftRight, MapPinOff, GitMerge
 } from 'lucide-react';
 import { useState } from 'react';
 import bdLogo from '../../assets/BD_logo.jpg';
@@ -17,7 +17,8 @@ const navGroups = [
   {
     label: 'Plants',
     items: [
-      { to: '/admin/plants',      label: 'Plants',        icon: Leaf },
+      { to: '/admin/plants',       label: 'Plants',        icon: Leaf },
+      { to: '/admin/plants/merge', label: 'Merge Dupes',   icon: GitMerge },
       { to: '/admin/production',  label: 'In Production', icon: Sprout },
       { to: '/admin/in-ground',   label: 'In Ground',     icon: TreePine },
       { to: '/admin/job-map',     label: 'Job Map',       icon: Map },
@@ -32,8 +33,11 @@ const navGroups = [
       { to: '/admin/inventory/count',        label: 'Count Entry',    icon: ClipboardList },
       { to: '/admin/inventory/count-report', label: 'Count Report',   icon: BarChart2 },
       { to: '/admin/inventory/sheets',       label: 'Barcode Sheets', icon: Barcode },
-      { to: '/admin/deliveries',      label: 'Deliveries',  icon: Truck },
-      { to: '/admin/merchandise',     label: 'Merchandise', icon: ShoppingCart },
+      { to: '/admin/inventory/transfer',     label: 'Transfer',       icon: ArrowLeftRight },
+      { to: '/admin/inventory/no-location',  label: 'No Location',    icon: MapPinOff },
+      { to: '/admin/deliveries',      label: 'Deliveries',    icon: Truck },
+      { to: '/admin/vendor-orders',   label: 'Vendor Orders', icon: PackageCheck },
+      { to: '/admin/merchandise',     label: 'Merchandise',   icon: ShoppingCart },
     ],
   },
   {
@@ -53,8 +57,9 @@ const navGroups = [
   {
     label: 'Setup',
     items: [
-      { to: '/admin/vendors',              label: 'Vendors',       icon: Building2 },
-      { to: '/admin/locations',            label: 'Locations',     icon: MapPin },
+      { to: '/admin/vendors',              label: 'Vendors',          icon: Building2 },
+      { to: '/admin/pot-size-pricing',     label: 'Container Pricing', icon: DollarSign },
+      { to: '/admin/locations',            label: 'Locations',        icon: MapPin },
       { to: '/admin/tray-types',           label: 'Trays & Pots',  icon: LayoutGrid },
       { to: '/admin/plant-types',           label: 'Plant Types',   icon: Layers },
       { to: '/admin/plant-type-defaults',  label: 'Type Defaults', icon: Shuffle },

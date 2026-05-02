@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { plants as plantsApi, variants as variantsApi, vendorSkus as vendorSkusApi, vendors as vendorsApi } from '../../api/client';
+import { plants as plantsApi, variants as variantsApi, vendorSkus as vendorSkusApi, vendors as vendorsApi, trayTypes as trayTypesApi, potSizeCosts as potSizeCostsApi } from '../../api/client';
 import Modal from '../../components/ui/Modal';
 import Confirm from '../../components/ui/Confirm';
 import Pagination from '../../components/ui/Pagination';
@@ -286,16 +286,37 @@ function VariantRow({ variant, onDelete }) {
 
 function VariantsPanel({ plant, onClose }) {
   const qc = useQueryClient();
-  const [newSize, setNewSize] = useState('');
+  const [selectedOpt, setSelectedOpt] = useState('');
+  const [customInput, setCustomInput] = useState('');
   const [newSku, setNewSku] = useState('');
   const [error, setError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
 
+  const { data: potCostsData } = useQuery({
+    queryKey: ['pot-size-costs'],
+    queryFn: () => potSizeCostsApi.list().then(r => r.data),
+    staleTime: 5 * 60_000,
+  });
+  const { data: trayTypesData } = useQuery({
+    queryKey: ['tray-types', 'pot'],
+    queryFn: () => trayTypesApi.list({ category: 'pot' }).then(r => r.data),
+    staleTime: 5 * 60_000,
+  });
+
+  const sizeOptions = useMemo(() => {
+    const fromCosts = (potCostsData?.pot_size_costs ?? []).map(p => p.label);
+    const fromTrays = (trayTypesData ?? []).map(t => t.name);
+    return [...new Set([...fromCosts, ...fromTrays])];
+  }, [potCostsData, trayTypesData]);
+
+  const effectiveSize = selectedOpt === '__custom__' ? customInput : selectedOpt;
+
   const addMutation = useMutation({
-    mutationFn: () => variantsApi.create(plant.id, { container_size: newSize.trim(), sku: newSku.trim() || undefined }),
+    mutationFn: (data) => variantsApi.create(plant.id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['plants'] });
-      setNewSize('');
+      setSelectedOpt('');
+      setCustomInput('');
       setNewSku('');
       setError('');
     },
@@ -328,12 +349,15 @@ function VariantsPanel({ plant, onClose }) {
       <div className="border-t border-forest-100 pt-3">
         <p className="text-xs font-medium text-forest-600 mb-2">Add Size</p>
         <div className="flex gap-2">
-          <input
+          <select
             className="input flex-1 text-sm"
-            placeholder="e.g. 1 gallon"
-            value={newSize}
-            onChange={e => setNewSize(e.target.value)}
-          />
+            value={selectedOpt}
+            onChange={e => { setSelectedOpt(e.target.value); setCustomInput(''); setError(''); }}
+          >
+            <option value="">— select size —</option>
+            {sizeOptions.map(s => <option key={s} value={s}>{s}</option>)}
+            <option value="__custom__">Other…</option>
+          </select>
           <input
             className="input w-28 text-sm"
             placeholder="SKU (opt)"
@@ -341,13 +365,25 @@ function VariantsPanel({ plant, onClose }) {
             onChange={e => setNewSku(e.target.value)}
           />
           <button
-            onClick={() => { if (newSize.trim()) addMutation.mutate(); else setError('Size is required'); }}
+            onClick={() => {
+              if (!effectiveSize.trim()) return setError('Size is required');
+              addMutation.mutate({ container_size: effectiveSize.trim(), sku: newSku.trim() || undefined });
+            }}
             disabled={addMutation.isPending}
             className="btn-primary text-sm px-3"
           >
             Add
           </button>
         </div>
+        {selectedOpt === '__custom__' && (
+          <input
+            className="input w-full text-sm mt-1.5"
+            placeholder="Enter custom size…"
+            value={customInput}
+            onChange={e => setCustomInput(e.target.value)}
+            autoFocus
+          />
+        )}
         {error && <p className="text-red-600 text-xs mt-1">{error}</p>}
       </div>
 

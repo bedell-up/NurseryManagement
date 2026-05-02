@@ -35,15 +35,20 @@ export const plants = {
   update:     (id, d)  => api.put(`/plants/${id}`, d),
   delete:     (id)     => api.delete(`/plants/${id}`),
   bulkDelete: (ids)    => api.post('/plants/bulk-delete', { ids }),
+  duplicates: ()       => api.get('/plants/duplicates'),
+  merge:      (data)   => api.post('/plants/merge', data),
 };
 
 // Inventory
 export const inventory = {
   list:             (params)     => api.get('/inventory', { params }),
+  byLocation:       (location)   => api.get('/inventory', { params: { location, limit: 9999 } }),
   adjust:           (data)       => api.post('/inventory/adjust', data),
   update:           (id, data)   => api.patch(`/inventory/${id}`, data),
   bulkCount:        (rows)       => api.post('/inventory/count', rows),
   setLocationSplits:(id, splits) => api.put(`/inventory/${id}/location-splits`, splits),
+  transfer:         (data)       => api.post('/inventory/transfer', data),
+  withoutLocation:  ()           => api.get('/inventory/without-location'),
   countReport:      (params)     => api.get('/inventory/count-report', { params }),
   countReportUsers: ()           => api.get('/inventory/count-report/users'),
 };
@@ -235,15 +240,36 @@ export const merchandise = {
   remove: (id)     => api.delete(`/merchandise/${id}`),
 };
 
+// Pot Size Pricing
+export const potSizeCosts = {
+  list:   ()        => api.get('/pot-size-costs'),
+  create: (data)    => api.post('/pot-size-costs', data),
+  update: (id, d)   => api.put(`/pot-size-costs/${id}`, d),
+  remove: (id)      => api.delete(`/pot-size-costs/${id}`),
+};
+
+// Vendor Orders
+export const vendorOrders = {
+  list:        (params)  => api.get('/vendor-orders', { params }),
+  get:         (id)      => api.get(`/vendor-orders/${id}`),
+  create:      (data)    => api.post('/vendor-orders', data),
+  update:      (id, d)   => api.put(`/vendor-orders/${id}`, d),
+  markOrdered: (id)      => api.post(`/vendor-orders/${id}/mark-ordered`),
+  receive:     (id, d)   => api.post(`/vendor-orders/${id}/receive`, d ?? {}),
+  cancel:      (id)      => api.post(`/vendor-orders/${id}/cancel`),
+  remove:      (id)      => api.delete(`/vendor-orders/${id}`),
+};
+
 // Nursery Orders
 export const nurseryOrders = {
   list:    (params)  => api.get('/nursery-orders', { params }),
   get:     (id)      => api.get(`/nursery-orders/${id}`),
   create:  (data)    => api.post('/nursery-orders', data),
   update:  (id, d)   => api.put(`/nursery-orders/${id}`, d),
-  fulfill: (id)      => api.post(`/nursery-orders/${id}/fulfill`),
-  cancel:  (id)      => api.post(`/nursery-orders/${id}/cancel`),
-  remove:  (id)      => api.delete(`/nursery-orders/${id}`),
+  fulfill:     (id)       => api.post(`/nursery-orders/${id}/fulfill`),
+  cancel:      (id)       => api.post(`/nursery-orders/${id}/cancel`),
+  emailReport: (id, to)   => api.post(`/nursery-orders/${id}/email`, to ? { to } : {}),
+  remove:      (id)       => api.delete(`/nursery-orders/${id}`),
 };
 
 // Barcode sheet (print)

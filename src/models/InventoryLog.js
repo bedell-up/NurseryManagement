@@ -20,7 +20,7 @@ const InventoryLog = sequelize.define('InventoryLog', {
     references: { model: 'users', key: 'id' },
   },
   change_type: {
-    type: DataTypes.ENUM('adjustment', 'sale', 'preorder_reserve', 'preorder_release', 'delivery_received', 'damage', 'return', 'shopify_sync', 'count', 'landscaping_transfer'),
+    type: DataTypes.ENUM('adjustment', 'sale', 'preorder_reserve', 'preorder_release', 'delivery_received', 'damage', 'return', 'shopify_sync', 'count', 'landscaping_transfer', 'location_transfer'),
     allowNull: false,
     index: true,
   },

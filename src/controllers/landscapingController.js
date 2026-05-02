@@ -127,22 +127,21 @@ async function addPlantToProject(req, res) {
 
     const available = inv.quantity_on_hand - (inv.quantity_reserved || 0);
     if (available < qty) {
-      return res.status(400).json({ error: `Only ${available} available in inventory (${inv.quantity_on_hand} on hand, ${inv.quantity_reserved} reserved)` });
+      return res.status(400).json({ error: `Only ${available} available in inventory (${inv.quantity_on_hand} on hand, ${inv.quantity_reserved || 0} reserved)` });
     }
 
-    const before = inv.quantity_on_hand;
-    const after = before - qty;
-    await inv.update({ quantity_on_hand: after });
+    const newReserved = (inv.quantity_reserved || 0) + qty;
+    await inv.update({ quantity_reserved: newReserved });
 
     await InventoryLog.create({
       variant_id,
       user_id: req.user?.id || null,
       change_type: 'landscaping_transfer',
-      quantity_before: before,
+      quantity_before: inv.quantity_on_hand,
       quantity_change: -qty,
-      quantity_after: after,
+      quantity_after: inv.quantity_on_hand,
       reference_id: project_id,
-      notes: notes || `Transferred to ${project.name}`,
+      notes: notes || `Reserved for ${project.name}`,
       location: location_note || null,
     });
   }
@@ -175,8 +174,21 @@ async function updateProjectPlant(req, res) {
   const allowed = ['quantity', 'install_date', 'status', 'location_note', 'notes'];
   const data = {};
   allowed.forEach(k => { if (req.body[k] !== undefined) data[k] = req.body[k]; });
-  await plant.update(data);
 
+  // Sync inventory reservation when quantity changes
+  if (req.body.quantity !== undefined) {
+    const newQty = parseInt(req.body.quantity, 10);
+    const diff = newQty - plant.quantity;
+    if (diff !== 0) {
+      const inv = await Inventory.findOne({ where: { variant_id: plant.variant_id } });
+      if (inv) {
+        const newReserved = Math.max(0, (inv.quantity_reserved || 0) + diff);
+        await inv.update({ quantity_reserved: newReserved });
+      }
+    }
+  }
+
+  await plant.update(data);
   res.json({ plant });
 }
 
@@ -184,23 +196,28 @@ async function removeProjectPlant(req, res) {
   const plant = await LandscapingProjectPlant.findByPk(req.params.id);
   if (!plant) return res.status(404).json({ error: 'Record not found' });
 
-  const { return_to_inventory = false } = req.body;
+  const { return_to_inventory = true } = req.body;
 
-  if (return_to_inventory) {
-    const inv = await Inventory.findOne({ where: { variant_id: plant.variant_id } });
-    if (inv) {
-      const before = inv.quantity_on_hand;
-      const after = before + plant.quantity;
-      await inv.update({ quantity_on_hand: after });
+  const inv = await Inventory.findOne({ where: { variant_id: plant.variant_id } });
+  if (inv) {
+    if (return_to_inventory) {
+      // Return the physical plants back to on-hand count
+      const newOnHand = inv.quantity_on_hand + plant.quantity;
+      const newReserved = Math.max(0, (inv.quantity_reserved || 0) - plant.quantity);
+      await inv.update({ quantity_on_hand: newOnHand, quantity_reserved: newReserved });
       await InventoryLog.create({
         variant_id: plant.variant_id,
         user_id: req.user?.id || null,
         change_type: 'return',
-        quantity_before: before,
+        quantity_before: inv.quantity_on_hand,
         quantity_change: plant.quantity,
-        quantity_after: after,
+        quantity_after: newOnHand,
         notes: 'Returned from landscaping / in-ground planting',
       });
+    } else {
+      // Plants were installed/lost — release the reservation only (on_hand stays reduced)
+      const newReserved = Math.max(0, (inv.quantity_reserved || 0) - plant.quantity);
+      await inv.update({ quantity_reserved: newReserved });
     }
   }
 

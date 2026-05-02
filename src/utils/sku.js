@@ -4,7 +4,7 @@ function formatSizeCode(containerSize) {
 
   // "N gal" or "N gallon"
   const galMatch = s.match(/^(\d+(?:\.\d+)?)\s*gal(?:lon)?s?$/);
-  if (galMatch) return `${galMatch[1]}g`;
+  if (galMatch) return `${galMatch[1]}G`;
 
   // "bare root" with optional size suffix
   if (s.startsWith('bare root')) {

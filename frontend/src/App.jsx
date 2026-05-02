@@ -37,6 +37,11 @@ import AdminBarcodeSheets       from './pages/admin/AdminBarcodeSheets';
 import AdminMerchandise         from './pages/admin/AdminMerchandise';
 import AdminCountReport        from './pages/admin/AdminCountReport';
 import AdminNurseryOrders      from './pages/admin/AdminNurseryOrders';
+import AdminVendorOrders       from './pages/admin/AdminVendorOrders';
+import AdminInventoryTransfer  from './pages/admin/AdminInventoryTransfer';
+import AdminNoLocation         from './pages/admin/AdminNoLocation';
+import AdminPlantMerge         from './pages/admin/AdminPlantMerge';
+import AdminPotSizePricing     from './pages/admin/AdminPotSizePricing';
 import AdminPlantTypes         from './pages/admin/AdminPlantTypes';
 
 const qc = new QueryClient({
@@ -82,10 +87,15 @@ export default function App() {
               <Route path="inventory/count"         element={<AdminInventoryCount />} />
               <Route path="inventory/count-report"  element={<AdminCountReport />} />
               <Route path="inventory/sheets"        element={<AdminBarcodeSheets />} />
+              <Route path="inventory/transfer"      element={<AdminInventoryTransfer />} />
+              <Route path="inventory/no-location"   element={<AdminNoLocation />} />
+              <Route path="plants/merge"            element={<AdminPlantMerge />} />
               <Route path="production"   element={<AdminProduction />} />
               <Route path="pricing"          element={<AdminPricing />} />
               <Route path="preorders"        element={<AdminPreorders />} />
               <Route path="nursery-orders"   element={<AdminNurseryOrders />} />
+              <Route path="vendor-orders"      element={<AdminVendorOrders />} />
+              <Route path="pot-size-pricing"   element={<AdminPotSizePricing />} />
               <Route path="deliveries"   element={<AdminDeliveries />} />
               <Route path="spotlights"   element={<AdminSpotlights />} />
               <Route path="import"       element={<AdminImport />} />

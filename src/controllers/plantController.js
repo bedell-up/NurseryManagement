@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const { Plant, PlantVariant, Inventory, Pricing, Spotlight, sequelize } = require('../models');
+const { NurseryOrderItem, VendorOrderItem, Preorder, Production, SeedLot, LandscapingProjectPlant } = require('../models');
 
 async function list(req, res) {
   const {
@@ -113,4 +114,64 @@ async function bulkRemove(req, res) {
   res.json({ message: `${ids.length} plant(s) deactivated` });
 }
 
-module.exports = { list, get, create, update, remove, bulkRemove };
+// GET /plants/duplicates — plants that share the same genus+species
+async function duplicates(req, res) {
+  const groups = await sequelize.query(`
+    SELECT genus, species,
+      array_agg(id            ORDER BY created_at ASC) AS ids,
+      array_agg(common_name   ORDER BY created_at ASC) AS names,
+      array_agg(scientific_name ORDER BY created_at ASC) AS scientific_names,
+      array_agg(
+        (SELECT COUNT(*) FROM plant_variants WHERE plant_id = plants.id AND is_active = true)
+        ORDER BY created_at ASC
+      ) AS variant_counts,
+      array_agg(
+        (SELECT COALESCE(SUM(i.quantity_on_hand), 0)
+         FROM plant_variants pv JOIN inventory i ON i.variant_id = pv.id
+         WHERE pv.plant_id = plants.id AND pv.is_active = true)
+        ORDER BY created_at ASC
+      ) AS inv_totals
+    FROM plants
+    WHERE genus IS NOT NULL AND species IS NOT NULL AND is_active = true
+    GROUP BY genus, species
+    HAVING COUNT(*) > 1
+    ORDER BY genus, species
+  `, { type: 'SELECT' });
+
+  res.json({ groups });
+}
+
+// POST /plants/merge — move all variants from drop_id into keep_id, deactivate drop
+async function merge(req, res) {
+  const { keep_id, drop_id } = req.body;
+  if (!keep_id || !drop_id) return res.status(400).json({ error: 'keep_id and drop_id are required' });
+  if (keep_id === drop_id) return res.status(400).json({ error: 'keep_id and drop_id must be different' });
+
+  const [keep, drop] = await Promise.all([Plant.findByPk(keep_id), Plant.findByPk(drop_id)]);
+  if (!keep) return res.status(404).json({ error: 'keep plant not found' });
+  if (!drop) return res.status(404).json({ error: 'drop plant not found' });
+
+  await sequelize.transaction(async (t) => {
+    // Reassign variants
+    await PlantVariant.update({ plant_id: keep_id }, { where: { plant_id: drop_id }, transaction: t });
+
+    // Reassign other FK references
+    for (const [Model, fk] of [
+      [Production,             'plant_id'],
+      [SeedLot,                'plant_id'],
+      [Spotlight,              'plant_id'],
+    ]) {
+      await Model.update({ plant_id: keep_id }, { where: { plant_id: drop_id }, transaction: t });
+    }
+
+    // Deactivate the duplicate plant
+    await drop.update({ is_active: false }, { transaction: t });
+  });
+
+  const updated = await Plant.findByPk(keep_id, {
+    include: [{ model: PlantVariant, as: 'variants', where: { is_active: true }, required: false }],
+  });
+  res.json({ plant: updated, merged_from: drop_id });
+}
+
+module.exports = { list, get, create, update, remove, bulkRemove, duplicates, merge };
