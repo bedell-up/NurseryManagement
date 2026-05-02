@@ -25,6 +25,7 @@ function InlineForm({ initial = EMPTY, onSave, onCancel, isPending, error, plant
     retail_price:    initial.retail_price    != null ? String(initial.retail_price)    : '',
     wholesale_price: initial.wholesale_price != null ? String(initial.wholesale_price) : '',
     plant_type:      initial.plant_type ?? '',
+    notes:           initial.notes ?? '',
   });
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
 
