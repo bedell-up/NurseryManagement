@@ -1,7 +1,9 @@
 const { Op } = require('sequelize');
-const { Inventory, InventoryLog, InventoryLocationSplit, PlantVariant, Plant, User, sequelize } = require('../models');
+const { Inventory, InventoryLog, InventoryLocationSplit, PlantVariant, Plant, Pricing, User, sequelize } = require('../models');
+const shopifyService = require('../services/shopifyService');
 
 const VALID_STATUSES = ['retail_ready', 'just_potted', 'available_soon', 'on_hold', 'damaged'];
+const AUTO_PUBLISH_STATUSES = new Set(['retail_ready', 'available_soon']);
 
 // Push an inventory level to Shopify if the variant is linked and credentials are set.
 // Fires-and-forgets — never throws so it can't break local operations.
@@ -18,7 +20,56 @@ async function pushToShopify(variant, newQty) {
     console.warn(`[shopify-sync] failed for variant ${variant?.id}: ${err.message}`);
   }
 }
-const shopifyService = require('../services/shopifyService');
+
+// Auto-create a Shopify product when a plant reaches a publishable status.
+// Fires-and-forgets — never throws so it can't break local operations.
+async function autoCreateShopifyProduct(variantId, status) {
+  if (!AUTO_PUBLISH_STATUSES.has(status)) return;
+  try {
+    const variant = await PlantVariant.findByPk(variantId, {
+      include: [{ model: Plant, as: 'plant' }],
+    });
+    if (!variant?.plant) return;
+    const plant = variant.plant;
+
+    // Already on Shopify — nothing to do
+    if (plant.shopify_product_id) return;
+
+    // Load all active variants with pricing for this plant
+    const allVariants = await PlantVariant.findAll({
+      where: { plant_id: plant.id, is_active: true },
+      include: [{ model: Pricing, as: 'pricing' }],
+    });
+
+    const result = await shopifyService.createShopifyProduct(plant, allVariants);
+    const shopifyProduct = result.product;
+
+    await plant.update({ shopify_product_id: String(shopifyProduct.id) });
+
+    // Map Shopify variant IDs back to our variants by SKU
+    for (const sv of shopifyProduct.variants ?? []) {
+      const match = allVariants.find(v => v.sku === sv.sku);
+      if (match) {
+        await match.update({
+          shopify_variant_id:         String(sv.id),
+          shopify_inventory_item_id:  String(sv.inventory_item_id),
+        });
+      }
+    }
+
+    // Now sync the inventory quantity for the triggering variant
+    const refreshed = await PlantVariant.findByPk(variantId);
+    const inv = await Inventory.findOne({ where: { variant_id: variantId } });
+    if (refreshed && inv) {
+      const reserved = inv.quantity_reserved ?? 0;
+      await pushToShopify(refreshed, Math.max(0, inv.quantity_on_hand - reserved));
+    }
+
+    console.log(`[shopify-auto-create] created product ${shopifyProduct.id} for plant ${plant.id} (${plant.common_name})`);
+  } catch (err) {
+    console.warn(`[shopify-auto-create] failed for variant ${variantId}: ${err.message}`);
+  }
+}
 
 async function list(req, res) {
   const { low_stock, page = 1, limit = 100, location } = req.query;
@@ -102,6 +153,9 @@ async function adjust(req, res) {
   const variant = await PlantVariant.findByPk(variant_id);
   const reserved = inv.quantity_reserved ?? 0;
   pushToShopify(variant, Math.max(0, after - reserved));
+
+  // Auto-create Shopify product if this variant's plant isn't listed yet
+  autoCreateShopifyProduct(variant_id, status);
 
   // Upsert location split when a location is specified
   if (location) {
@@ -229,6 +283,9 @@ async function bulkCount(req, res) {
     // Push to Shopify
     const reserved = inv.quantity_reserved ?? 0;
     pushToShopify(variant, Math.max(0, newQty - reserved));
+
+    // Auto-create Shopify product if this variant's plant isn't listed yet
+    autoCreateShopifyProduct(variant.id, status);
 
     results.push({ sku, before, after: newQty, change, ok: true });
   }
