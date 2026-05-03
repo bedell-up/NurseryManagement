@@ -135,6 +135,9 @@ async function duplicates(req, res) {
     WHERE genus IS NOT NULL AND species IS NOT NULL AND is_active = true
     GROUP BY genus, species
     HAVING COUNT(*) > 1
+      AND bool_or(
+        (SELECT COUNT(*) FROM plant_variants WHERE plant_id = plants.id AND is_active = true) = 0
+      )
     ORDER BY genus, species
   `, { type: 'SELECT' });
 
