@@ -59,6 +59,7 @@ export const pricing = {
   update:     (vid, d) => api.put(`/pricing/${vid}`, d),
   bulkUpdate: (data)   => api.post('/pricing/bulk-update', data),
   backfill:   ()       => api.post('/pricing/backfill'),
+  syncShopify: ()      => api.post('/pricing/sync-shopify', {}, { timeout: 120_000 }),
 };
 
 // Preorders

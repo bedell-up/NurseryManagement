@@ -5,7 +5,7 @@ import Modal from '../../components/ui/Modal';
 import Pagination from '../../components/ui/Pagination';
 import { SortHeader, MultiSortBar } from '../../components/ui/SortControls';
 import { useMultiSort, applyMultiSort } from '../../hooks/useMultiSort';
-import { Pencil, ChevronRight, ChevronDown, Store, Search } from 'lucide-react';
+import { Pencil, ChevronRight, ChevronDown, Store, Search, RefreshCw, X } from 'lucide-react';
 
 const PRICING_SORT_COLS = [
   { value: 'plant',           label: 'Plant' },
@@ -277,6 +277,7 @@ export default function AdminPricing() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [editItem, setEditItem] = useState(null);
+  const [syncResult, setSyncResult] = useState(null);
   const { sortCol, sortDir, sort2Col, setSort2Col, sort2Dir, setSort2Dir, handleSort } = useMultiSort('plant');
 
   const handleSearch = (e) => { setSearch(e.target.value); setPage(1); };
@@ -293,14 +294,44 @@ export default function AdminPricing() {
     [data?.pricing, sortCol, sortDir, sort2Col, sort2Dir],
   );
 
+  const syncMutation = useMutation({
+    mutationFn: () => pricing.syncShopify().then(r => r.data),
+    onSuccess:  (d) => setSyncResult(d),
+    onError:    (e) => setSyncResult({ error: e.response?.data?.error || 'Sync failed' }),
+  });
+
   return (
     <div className="p-6 max-w-screen-xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-serif font-semibold text-forest-900">Pricing</h1>
-        <p className="text-forest-500 text-sm mt-0.5">
-          {data?.total ?? '…'} variants — click any <span className="text-earth-700 font-medium">COG</span> value to edit inline, or use the pencil to edit all fields
-        </p>
+      <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-serif font-semibold text-forest-900">Pricing</h1>
+          <p className="text-forest-500 text-sm mt-0.5">
+            {data?.total ?? '…'} variants — click any <span className="text-earth-700 font-medium">COG</span> value to edit inline, or use the pencil to edit all fields
+          </p>
+        </div>
+        <button
+          onClick={() => { setSyncResult(null); syncMutation.mutate(); }}
+          disabled={syncMutation.isPending}
+          className="btn-secondary text-sm flex items-center gap-1.5 shrink-0"
+          title="Push all retail prices to Shopify for linked variants"
+        >
+          <RefreshCw size={14} className={syncMutation.isPending ? 'animate-spin' : ''} />
+          {syncMutation.isPending ? 'Syncing to Shopify…' : 'Sync Prices → Shopify'}
+        </button>
       </div>
+
+      {syncResult && (
+        <div className={`mb-5 px-4 py-3 rounded-lg text-sm flex items-center justify-between gap-3 ${syncResult.error ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-800 border border-green-200'}`}>
+          {syncResult.error
+            ? <span>{syncResult.error}</span>
+            : <span>
+                Synced <strong>{syncResult.synced}</strong> of <strong>{syncResult.total}</strong> variant{syncResult.total !== 1 ? 's' : ''} to Shopify
+                {syncResult.errors?.length > 0 && <span className="text-amber-700 ml-2">· {syncResult.errors.length} error{syncResult.errors.length !== 1 ? 's' : ''}</span>}
+              </span>}
+          <button onClick={() => setSyncResult(null)} className="shrink-0 opacity-60 hover:opacity-100"><X size={14} /></button>
+        </div>
+      )}
+
 
       <div className="card p-4 mb-5 flex flex-col gap-3">
         <div className="relative">

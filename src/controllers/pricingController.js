@@ -129,4 +129,38 @@ async function backfill(req, res) {
   res.json({ updated, skipped, total: targets.length });
 }
 
-module.exports = { list, update, bulkUpdate, backfill };
+// POST /pricing/sync-shopify — push all retail prices to Shopify for linked variants
+async function syncAllToShopify(req, res) {
+  const rows = await Pricing.findAll({
+    where: { retail_price: { [Op.gt]: 0 } },
+    include: [{
+      model: PlantVariant,
+      as: 'variant',
+      required: true,
+      where: { is_active: true, shopify_variant_id: { [Op.ne]: null } },
+    }],
+  });
+
+  let synced = 0;
+  const errors = [];
+
+  for (const row of rows) {
+    try {
+      await shopifyService.syncPriceToShopify(
+        row.variant.shopify_variant_id,
+        row.retail_price,
+        row.sale_price,
+      );
+      await row.update({ shopify_synced_at: new Date() });
+      synced++;
+    } catch (err) {
+      errors.push({ variant_id: row.variant_id, error: err.message });
+    }
+    // Stay within Shopify REST rate limit (2 req/s)
+    await new Promise(r => setTimeout(r, 500));
+  }
+
+  res.json({ synced, errors, total: rows.length });
+}
+
+module.exports = { list, update, bulkUpdate, backfill, syncAllToShopify };
