@@ -217,6 +217,15 @@ async function bulkCount(req, res) {
       notes: location ? `Bulk count entry — ${location}` : 'Bulk count entry',
     });
 
+    // Upsert location split so the item doesn't appear in "without location"
+    if (location) {
+      const [split, created] = await InventoryLocationSplit.findOrCreate({
+        where: { inventory_id: inv.id, location },
+        defaults: { quantity: newQty },
+      });
+      if (!created) await split.update({ quantity: newQty });
+    }
+
     // Push to Shopify
     const reserved = inv.quantity_reserved ?? 0;
     pushToShopify(variant, Math.max(0, newQty - reserved));
