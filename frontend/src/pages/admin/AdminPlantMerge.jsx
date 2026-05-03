@@ -140,7 +140,7 @@ export default function AdminPlantMerge() {
         <>
           <p className="text-sm text-forest-500 mb-4">{groups.length} group{groups.length !== 1 ? 's' : ''} to review</p>
           {groups.map(g => (
-            <GroupCard key={`${g.genus}-${g.species}`} group={g} />
+            <GroupCard key={`${g.genus}-${g.species}-${g.cultivar ?? ''}`} group={g} />
           ))}
         </>
       )}

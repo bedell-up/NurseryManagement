@@ -117,7 +117,7 @@ async function bulkRemove(req, res) {
 // GET /plants/duplicates — plants that share the same genus+species
 async function duplicates(req, res) {
   const groups = await sequelize.query(`
-    SELECT genus, species,
+    SELECT genus, species, COALESCE(cultivar, '') AS cultivar,
       array_agg(id            ORDER BY created_at ASC) AS ids,
       array_agg(common_name   ORDER BY created_at ASC) AS names,
       array_agg(scientific_name ORDER BY created_at ASC) AS scientific_names,
@@ -133,7 +133,7 @@ async function duplicates(req, res) {
       ) AS inv_totals
     FROM plants
     WHERE genus IS NOT NULL AND species IS NOT NULL AND is_active = true
-    GROUP BY genus, species
+    GROUP BY genus, species, COALESCE(cultivar, '')
     HAVING COUNT(*) > 1
       AND bool_or(
         (SELECT COUNT(*) FROM plant_variants WHERE plant_id = plants.id AND is_active = true) = 0
