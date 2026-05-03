@@ -4,7 +4,7 @@ import { inventory as inventoryApi, locations as locationsApi } from '../../api/
 import { ArrowRight, Plus, Trash2, CheckCircle, XCircle, ArrowLeftRight, ChevronDown, X } from 'lucide-react';
 
 function emptyLine(key) {
-  return { key, variant_id: '', qty: '' };
+  return { key, variant_id: '', qty: '', toLoc: '' };
 }
 
 function ResultBadge({ r, sourceItems }) {
@@ -18,6 +18,7 @@ function ResultBadge({ r, sourceItems }) {
         ? <CheckCircle size={14} className="text-green-600 shrink-0" />
         : <XCircle    size={14} className="text-red-500  shrink-0" />}
       <span className="font-medium">{name}</span>
+      {r.toLoc && <span className="text-forest-400 text-xs">→ {r.toLoc}</span>}
       {r.ok
         ? <span className="text-forest-500">— transferred {r.transferred}</span>
         : <span>— {r.error}</span>}
@@ -26,10 +27,10 @@ function ResultBadge({ r, sourceItems }) {
 }
 
 function PlantCombobox({ sourceItems, fromLoc, value, onChange, disabled }) {
-  const [query, setQuery]       = useState('');
-  const [open, setOpen]         = useState(false);
-  const containerRef            = useRef(null);
-  const inputRef                = useRef(null);
+  const [query, setQuery] = useState('');
+  const [open,  setOpen]  = useState(false);
+  const containerRef      = useRef(null);
+  const inputRef          = useRef(null);
 
   const selected = sourceItems.find(i => i.variant?.id === value);
 
@@ -65,7 +66,6 @@ function PlantCombobox({ sourceItems, fromLoc, value, onChange, disabled }) {
     inputRef.current?.focus();
   }
 
-  // Close on outside click
   useEffect(() => {
     function handleClick(e) {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -80,14 +80,11 @@ function PlantCombobox({ sourceItems, fromLoc, value, onChange, disabled }) {
   function handleInputChange(e) {
     setQuery(e.target.value);
     if (!open) setOpen(true);
-    if (value) onChange(''); // clear selection when user types
+    if (value) onChange('');
   }
 
-  const placeholder = disabled
-    ? '— no stock at this location —'
-    : '— type to search plants —';
-
-  const inputValue = open ? query : (selected ? displayLabel(selected) : '');
+  const placeholder = disabled ? '— no stock at this location —' : '— type to search plants —';
+  const inputValue  = open ? query : (selected ? displayLabel(selected) : '');
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -106,39 +103,34 @@ function PlantCombobox({ sourceItems, fromLoc, value, onChange, disabled }) {
           disabled={disabled}
           autoComplete="off"
         />
-        {selected && !open && (
-          <button type="button" onClick={clear} className="shrink-0 text-forest-400 hover:text-forest-700">
-            <X size={13} />
-          </button>
-        )}
-        {!selected && <ChevronDown size={13} className="shrink-0 text-forest-400" />}
+        {selected && !open
+          ? <button type="button" onClick={clear} className="shrink-0 text-forest-400 hover:text-forest-700"><X size={13} /></button>
+          : <ChevronDown size={13} className="shrink-0 text-forest-400" />}
       </div>
 
       {open && !disabled && (
         <ul className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-forest-200 bg-white shadow-lg text-sm">
           {options.length === 0 ? (
             <li className="px-3 py-2 text-forest-400 italic">No matches</li>
-          ) : (
-            options.map(inv => {
-              const sci    = inv.variant?.plant?.scientific_name ?? '';
-              const common = inv.variant?.plant?.common_name     ?? '';
-              const size   = inv.variant?.container_size         ?? '';
-              const split  = inv.location_splits?.find(s => s.location.toLowerCase() === fromLoc.toLowerCase());
-              const qty    = split?.quantity ?? 0;
-              return (
-                <li
-                  key={inv.variant?.id}
-                  onMouseDown={() => selectOption(inv)}
-                  className={`px-3 py-2 cursor-pointer hover:bg-forest-50 ${value === inv.variant?.id ? 'bg-forest-100' : ''}`}
-                >
-                  <span className="font-medium italic text-forest-900">{sci}</span>
-                  {common && <span className="text-forest-500 ml-1">({common})</span>}
-                  <span className="text-forest-400 ml-1">— {size}</span>
-                  <span className="float-right text-forest-400 text-xs">{qty} avail.</span>
-                </li>
-              );
-            })
-          )}
+          ) : options.map(inv => {
+            const sci    = inv.variant?.plant?.scientific_name ?? '';
+            const common = inv.variant?.plant?.common_name     ?? '';
+            const size   = inv.variant?.container_size         ?? '';
+            const split  = inv.location_splits?.find(s => s.location.toLowerCase() === fromLoc.toLowerCase());
+            const qty    = split?.quantity ?? 0;
+            return (
+              <li
+                key={inv.variant?.id}
+                onMouseDown={() => selectOption(inv)}
+                className={`px-3 py-2 cursor-pointer hover:bg-forest-50 ${value === inv.variant?.id ? 'bg-forest-100' : ''}`}
+              >
+                <span className="font-medium italic text-forest-900">{sci}</span>
+                {common && <span className="text-forest-500 ml-1">({common})</span>}
+                <span className="text-forest-400 ml-1">— {size}</span>
+                <span className="float-right text-forest-400 text-xs">{qty} avail.</span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
@@ -146,11 +138,11 @@ function PlantCombobox({ sourceItems, fromLoc, value, onChange, disabled }) {
 }
 
 export default function AdminInventoryTransfer() {
-  const [fromLoc, setFromLoc]   = useState('');
-  const [toLoc,   setToLoc]     = useState('');
-  const [lines,   setLines]     = useState([emptyLine(0)]);
-  const [nextKey, setNextKey]   = useState(1);
-  const [results, setResults]   = useState(null);
+  const [fromLoc, setFromLoc] = useState('');
+  const [lines,   setLines]   = useState([emptyLine(0)]);
+  const [nextKey, setNextKey] = useState(1);
+  const [results, setResults] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const { data: locsData } = useQuery({
     queryKey: ['locations'],
@@ -185,6 +177,13 @@ export default function AdminInventoryTransfer() {
     return split?.quantity ?? 0;
   }
 
+  // Total qty allocated per variant across all lines
+  function allocatedForVariant(variant_id, excludeKey = null) {
+    return lines
+      .filter(l => l.variant_id === variant_id && l.key !== excludeKey && l.qty !== '')
+      .reduce((sum, l) => sum + (parseInt(l.qty, 10) || 0), 0);
+  }
+
   function addLine() {
     setLines(prev => [...prev, emptyLine(nextKey)]);
     setNextKey(k => k + 1);
@@ -198,49 +197,56 @@ export default function AdminInventoryTransfer() {
     setLines(prev => prev.map(l => l.key === key ? { ...l, [field]: value } : l));
   }
 
-  const transferMutation = useMutation({
-    mutationFn: (data) => inventoryApi.transfer(data).then(r => r.data),
-    onSuccess: (data) => setResults(data.results),
-    onError:   (e)    => setResults([{ error: e.response?.data?.error || 'Transfer failed' }]),
-  });
-
-  function handleSubmit() {
-    const items = lines
-      .filter(l => l.variant_id && l.qty !== '')
-      .map(l => ({ variant_id: l.variant_id, quantity: parseInt(l.qty, 10) }));
-    if (!items.length) return;
+  async function handleSubmit() {
+    const valid = lines.filter(l => l.variant_id && l.toLoc && l.qty !== '' && parseInt(l.qty, 10) > 0);
+    if (!valid.length) return;
     setResults(null);
-    transferMutation.mutate({ from_location: fromLoc, to_location: toLoc, items });
+    setSubmitting(true);
+
+    // Group by destination location
+    const byDest = {};
+    for (const l of valid) {
+      if (!byDest[l.toLoc]) byDest[l.toLoc] = [];
+      byDest[l.toLoc].push({ variant_id: l.variant_id, quantity: parseInt(l.qty, 10) });
+    }
+
+    const allResults = [];
+    for (const [toLoc, items] of Object.entries(byDest)) {
+      try {
+        const res = await inventoryApi.transfer({ from_location: fromLoc, to_location: toLoc, items }).then(r => r.data);
+        allResults.push(...res.results.map(r => ({ ...r, toLoc })));
+      } catch (e) {
+        allResults.push({ error: e.response?.data?.error || 'Transfer failed', toLoc });
+      }
+    }
+
+    setResults(allResults);
+    setSubmitting(false);
   }
 
   function reset() {
     setFromLoc('');
-    setToLoc('');
     setLines([emptyLine(0)]);
     setNextKey(1);
     setResults(null);
   }
 
-  const canSubmit =
-    fromLoc &&
-    toLoc &&
-    fromLoc !== toLoc &&
-    lines.some(l => l.variant_id && l.qty !== '' && parseInt(l.qty, 10) > 0) &&
-    !transferMutation.isPending;
+  const validLines = lines.filter(l => l.variant_id && l.toLoc && l.qty !== '' && parseInt(l.qty, 10) > 0);
+  const canSubmit  = fromLoc && validLines.length > 0 && !submitting;
 
   return (
     <div className="p-6 max-w-screen-lg mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-serif font-semibold text-forest-900">Transfer Inventory</h1>
-          <p className="text-forest-500 text-sm mt-0.5">Move plants between locations without changing total quantities.</p>
+          <p className="text-forest-500 text-sm mt-0.5">Move plants between locations. Each line can go to a different destination.</p>
         </div>
       </div>
 
-      {/* From / To row */}
+      {/* From location */}
       <div className="card p-5 mb-5">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex-1 min-w-40">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="w-64">
             <label className="block text-xs font-semibold text-forest-600 uppercase tracking-wide mb-1.5">From Location</label>
             <select
               className="input w-full"
@@ -251,20 +257,12 @@ export default function AdminInventoryTransfer() {
               {locationNames.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
-
-          <ArrowRight size={20} className="text-forest-400 mt-5 shrink-0" />
-
-          <div className="flex-1 min-w-40">
-            <label className="block text-xs font-semibold text-forest-600 uppercase tracking-wide mb-1.5">To Location</label>
-            <select
-              className="input w-full"
-              value={toLoc}
-              onChange={e => { setToLoc(e.target.value); setResults(null); }}
-            >
-              <option value="">— select —</option>
-              {locationNames.filter(n => n !== fromLoc).map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
+          {fromLoc && (
+            <div className="flex items-center gap-2 mt-5 text-xs text-forest-400">
+              <ArrowRight size={14} />
+              <span>To location is set per line below</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -280,15 +278,21 @@ export default function AdminInventoryTransfer() {
             <thead>
               <tr className="bg-forest-50/50 border-b border-forest-100">
                 <th className="px-4 py-2 text-left font-medium text-forest-600">Plant / Variant</th>
-                <th className="px-4 py-2 text-center font-medium text-forest-600 w-28">At Location</th>
-                <th className="px-4 py-2 text-center font-medium text-forest-600 w-28">Transfer Qty</th>
+                <th className="px-4 py-2 text-center font-medium text-forest-600 w-20">Avail.</th>
+                <th className="px-4 py-2 text-center font-medium text-forest-600 w-24">Qty</th>
+                <th className="px-4 py-2 text-left font-medium text-forest-600 w-44">To Location</th>
                 <th className="px-4 py-2 w-10" />
               </tr>
             </thead>
             <tbody className="divide-y divide-forest-50">
               {lines.map(line => {
-                const available = qtyAtSource(line.variant_id);
-                const overLimit = line.qty !== '' && parseInt(line.qty, 10) > available;
+                const available  = qtyAtSource(line.variant_id);
+                const alreadyUsed = line.variant_id ? allocatedForVariant(line.variant_id, line.key) : 0;
+                const maxForLine  = Math.max(0, available - alreadyUsed);
+                const qty         = parseInt(line.qty, 10) || 0;
+                const overLimit   = line.qty !== '' && qty > maxForLine;
+                const toOptions   = locationNames.filter(n => n !== fromLoc);
+
                 return (
                   <tr key={line.key}>
                     <td className="px-4 py-2.5">
@@ -302,21 +306,35 @@ export default function AdminInventoryTransfer() {
                     </td>
                     <td className="px-4 py-2.5 text-center">
                       {line.variant_id
-                        ? <span className={`font-semibold ${available === 0 ? 'text-red-500' : 'text-forest-800'}`}>{available}</span>
+                        ? <span className={`font-semibold ${maxForLine === 0 ? 'text-red-500' : 'text-forest-800'}`}>
+                            {maxForLine}
+                            {alreadyUsed > 0 && <span className="block text-xs text-forest-400 font-normal">of {available}</span>}
+                          </span>
                         : <span className="text-forest-300">—</span>}
                     </td>
                     <td className="px-4 py-2.5">
                       <input
                         type="number"
                         min="1"
-                        max={available || undefined}
+                        max={maxForLine || undefined}
                         className={`input w-full text-center text-sm ${overLimit ? 'border-red-400 bg-red-50' : ''}`}
                         placeholder="0"
                         value={line.qty}
                         onChange={e => setLine(line.key, 'qty', e.target.value)}
                         disabled={!line.variant_id}
                       />
-                      {overLimit && <p className="text-red-500 text-xs mt-0.5 text-center">Max {available}</p>}
+                      {overLimit && <p className="text-red-500 text-xs mt-0.5 text-center">Max {maxForLine}</p>}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <select
+                        className="input w-full text-sm"
+                        value={line.toLoc}
+                        onChange={e => setLine(line.key, 'toLoc', e.target.value)}
+                        disabled={!line.variant_id}
+                      >
+                        <option value="">— destination —</option>
+                        {toOptions.map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       {lines.length > 1 && (
@@ -333,7 +351,7 @@ export default function AdminInventoryTransfer() {
 
           <div className="px-4 py-3 border-t border-forest-100">
             <button onClick={addLine} className="btn-secondary text-sm flex items-center gap-1.5">
-              <Plus size={14} /> Add Item
+              <Plus size={14} /> Add Line
             </button>
           </div>
         </div>
@@ -364,7 +382,7 @@ export default function AdminInventoryTransfer() {
             className="btn-primary text-sm flex items-center gap-1.5"
           >
             <ArrowLeftRight size={15} />
-            {transferMutation.isPending ? 'Transferring…' : 'Transfer'}
+            {submitting ? 'Transferring…' : 'Transfer'}
           </button>
         </div>
       )}
