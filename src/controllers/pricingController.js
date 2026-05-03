@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { Pricing, PlantVariant, Plant, VendorSku, sequelize } = require('../models');
+const { Pricing, PlantVariant, Plant, VendorSku, PotSizeCost, sequelize } = require('../models');
 const shopifyService = require('../services/shopifyService');
 
 async function list(req, res) {
@@ -76,4 +76,55 @@ async function bulkUpdate(req, res) {
   res.json({ results });
 }
 
-module.exports = { list, update, bulkUpdate };
+// POST /pricing/backfill — set retail + wholesale on unpriced variants using container pricing grid
+async function backfill(req, res) {
+  // Load all pot-size costs once, keyed by label (lowercased)
+  const costs = await PotSizeCost.findAll();
+
+  // Index: label → array of matches (specific plant_type first, then catch-all)
+  const byLabel = {};
+  for (const c of costs) {
+    const key = c.label.trim().toLowerCase();
+    if (!byLabel[key]) byLabel[key] = [];
+    byLabel[key].push(c);
+  }
+
+  // Find all pricing rows with no retail price, include variant + plant
+  const unpriced = await Pricing.findAll({
+    where: { retail_price: null },
+    include: [{
+      model: PlantVariant,
+      as: 'variant',
+      required: true,
+      where: { is_active: true },
+      include: [{ model: Plant, as: 'plant', attributes: ['id', 'plant_type'] }],
+    }],
+  });
+
+  let updated = 0;
+  let skipped = 0;
+
+  for (const row of unpriced) {
+    const containerSize = row.variant?.container_size?.trim().toLowerCase();
+    const plantType     = row.variant?.plant?.plant_type ?? null;
+    const candidates    = byLabel[containerSize] ?? [];
+    if (!candidates.length) { skipped++; continue; }
+
+    // Prefer a cost entry that matches the plant's type; fall back to one with no type set
+    const match =
+      candidates.find(c => c.plant_type && plantType && c.plant_type.toLowerCase() === plantType.toLowerCase()) ??
+      candidates.find(c => !c.plant_type) ??
+      candidates[0];
+
+    if (match?.retail_price == null) { skipped++; continue; }
+
+    const retail    = parseFloat(match.retail_price);
+    const wholesale = parseFloat((retail * 0.5).toFixed(2));
+    await row.update({ retail_price: retail, wholesale_price: wholesale });
+    updated++;
+  }
+
+  res.json({ updated, skipped, total: unpriced.length });
+}
+
+module.exports = { list, update, bulkUpdate, backfill };

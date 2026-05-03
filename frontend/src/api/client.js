@@ -58,6 +58,7 @@ export const pricing = {
   list:       (params) => api.get('/pricing', { params }),
   update:     (vid, d) => api.put(`/pricing/${vid}`, d),
   bulkUpdate: (data)   => api.post('/pricing/bulk-update', data),
+  backfill:   ()       => api.post('/pricing/backfill'),
 };
 
 // Preorders

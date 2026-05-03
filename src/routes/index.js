@@ -109,6 +109,7 @@ router.post('/inventory/:variant_id/sync-shopify', authenticate, requireRole('ad
 router.get('/pricing', authenticate, pricingCtrl.list);
 router.put('/pricing/:variant_id', authenticate, requireRole('admin', 'manager'), pricingCtrl.update);
 router.post('/pricing/bulk-update', authenticate, requireRole('admin', 'manager'), pricingCtrl.bulkUpdate);
+router.post('/pricing/backfill', authenticate, requireRole('admin', 'manager'), pricingCtrl.backfill);
 
 // --- Preorders ---
 router.get('/preorders', authenticate, preorderCtrl.list);

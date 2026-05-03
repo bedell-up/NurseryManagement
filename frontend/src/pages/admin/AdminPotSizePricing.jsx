@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { potSizeCosts as api, plantTypes as plantTypesApi, trayTypes as trayTypesApi } from '../../api/client';
+import { potSizeCosts as api, plantTypes as plantTypesApi, trayTypes as trayTypesApi, pricing as pricingApi } from '../../api/client';
 import Confirm from '../../components/ui/Confirm';
-import { Plus, Pencil, Trash2, Check, X, Layers } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Layers, Wand2 } from 'lucide-react';
 
 function fmtPrice(v) {
   const n = parseFloat(v);
@@ -183,10 +183,17 @@ function Row({ item, onEdit, onDelete }) {
 
 export default function AdminPotSizePricing() {
   const qc = useQueryClient();
-  const [adding,      setAdding]      = useState(false);
-  const [editingId,   setEditingId]   = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [formError,   setFormError]   = useState('');
+  const [adding,        setAdding]        = useState(false);
+  const [editingId,     setEditingId]     = useState(null);
+  const [deleteTarget,  setDeleteTarget]  = useState(null);
+  const [formError,     setFormError]     = useState('');
+  const [backfillResult, setBackfillResult] = useState(null);
+
+  const backfillMutation = useMutation({
+    mutationFn: () => pricingApi.backfill().then(r => r.data),
+    onSuccess:  (d) => setBackfillResult(d),
+    onError:    (e) => setBackfillResult({ error: e.response?.data?.error || 'Backfill failed' }),
+  });
 
   const QK = ['pot-size-costs'];
 
@@ -258,14 +265,37 @@ export default function AdminPotSizePricing() {
           <h1 className="text-2xl font-serif font-semibold text-forest-900">Container Pricing</h1>
           <p className="text-forest-500 text-sm mt-0.5">Default retail and wholesale prices by pot or container size.</p>
         </div>
-        <button
-          onClick={() => { setAdding(true); setEditingId(null); setFormError(''); }}
-          className="btn-primary text-sm flex items-center gap-1.5"
-          disabled={adding}
-        >
-          <Plus size={15} /> Add Size
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setBackfillResult(null); backfillMutation.mutate(); }}
+            disabled={backfillMutation.isPending}
+            className="btn-secondary text-sm flex items-center gap-1.5"
+            title="Set retail + wholesale on any variant that has no price yet, using this grid. Wholesale = 50% of retail."
+          >
+            <Wand2 size={14} />
+            {backfillMutation.isPending ? 'Backfilling…' : 'Backfill Unpriced'}
+          </button>
+          <button
+            onClick={() => { setAdding(true); setEditingId(null); setFormError(''); }}
+            className="btn-primary text-sm flex items-center gap-1.5"
+            disabled={adding}
+          >
+            <Plus size={15} /> Add Size
+          </button>
+        </div>
       </div>
+
+      {backfillResult && (
+        <div className={`mb-4 px-4 py-3 rounded-lg text-sm flex items-center justify-between gap-3 ${backfillResult.error ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-800 border border-green-200'}`}>
+          {backfillResult.error
+            ? <span>{backfillResult.error}</span>
+            : <span>
+                Updated <strong>{backfillResult.updated}</strong> variant{backfillResult.updated !== 1 ? 's' : ''} with prices
+                {backfillResult.skipped > 0 && <span className="text-green-600"> · {backfillResult.skipped} skipped (no matching container size)</span>}
+              </span>}
+          <button onClick={() => setBackfillResult(null)} className="shrink-0 opacity-60 hover:opacity-100"><X size={14} /></button>
+        </div>
+      )}
 
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
