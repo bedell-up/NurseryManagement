@@ -78,10 +78,8 @@ async function bulkUpdate(req, res) {
 
 // POST /pricing/backfill — set retail + wholesale on unpriced variants using container pricing grid
 async function backfill(req, res) {
-  // Load all pot-size costs once, keyed by label (lowercased)
+  // Load all pot-size costs once, keyed by lowercased label
   const costs = await PotSizeCost.findAll();
-
-  // Index: label → array of matches (specific plant_type first, then catch-all)
   const byLabel = {};
   for (const c of costs) {
     const key = c.label.trim().toLowerCase();
@@ -89,28 +87,27 @@ async function backfill(req, res) {
     byLabel[key].push(c);
   }
 
-  // Find all pricing rows with no retail price, include variant + plant
-  const unpriced = await Pricing.findAll({
-    where: { retail_price: null },
-    include: [{
-      model: PlantVariant,
-      as: 'variant',
-      required: true,
-      where: { is_active: true },
-      include: [{ model: Plant, as: 'plant', attributes: ['id', 'plant_type'] }],
-    }],
+  // Find all active variants that have no pricing row OR have retail_price null/zero
+  const variants = await PlantVariant.findAll({
+    where: { is_active: true },
+    include: [
+      { model: Plant,   as: 'plant',   attributes: ['id', 'plant_type'] },
+      { model: Pricing, as: 'pricing', required: false },
+    ],
   });
+
+  const targets = variants.filter(v => !v.pricing || !v.pricing.retail_price);
 
   let updated = 0;
   let skipped = 0;
 
-  for (const row of unpriced) {
-    const containerSize = row.variant?.container_size?.trim().toLowerCase();
-    const plantType     = row.variant?.plant?.plant_type ?? null;
+  for (const variant of targets) {
+    const containerSize = variant.container_size?.trim().toLowerCase();
+    const plantType     = variant.plant?.plant_type ?? null;
     const candidates    = byLabel[containerSize] ?? [];
     if (!candidates.length) { skipped++; continue; }
 
-    // Prefer a cost entry that matches the plant's type; fall back to one with no type set
+    // Prefer plant-type-specific row; fall back to catch-all
     const match =
       candidates.find(c => c.plant_type && plantType && c.plant_type.toLowerCase() === plantType.toLowerCase()) ??
       candidates.find(c => !c.plant_type) ??
@@ -120,11 +117,16 @@ async function backfill(req, res) {
 
     const retail    = parseFloat(match.retail_price);
     const wholesale = parseFloat((retail * 0.5).toFixed(2));
-    await row.update({ retail_price: retail, wholesale_price: wholesale });
+
+    if (variant.pricing) {
+      await variant.pricing.update({ retail_price: retail, wholesale_price: wholesale });
+    } else {
+      await Pricing.create({ variant_id: variant.id, retail_price: retail, wholesale_price: wholesale });
+    }
     updated++;
   }
 
-  res.json({ updated, skipped, total: unpriced.length });
+  res.json({ updated, skipped, total: targets.length });
 }
 
 module.exports = { list, update, bulkUpdate, backfill };
