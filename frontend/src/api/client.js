@@ -293,6 +293,11 @@ export const scan = {
   bySku:     (sku)     => api.get(`/scan/sku/${encodeURIComponent(sku)}`),
 };
 
+// USDA plant lookup
+export const usda = {
+  lookup: (q) => api.get('/plants/usda-lookup', { params: { q } }),
+};
+
 // Shopify
 export const shopify = {
   openOrdersCount: () => api.get('/shopify/orders/open-count'),

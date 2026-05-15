@@ -44,6 +44,7 @@ const inatCtrl = require('../controllers/iNaturalistController');
 const productionCtrl = require('../controllers/productionController');
 const productionGroupCtrl = require('../controllers/productionGroupController');
 const productionStageCtrl = require('../controllers/productionStageController');
+const usdaCtrl = require('../controllers/usdaController');
 const variantCtrl = require('../controllers/variantController');
 const vendorSkuCtrl = require('../controllers/vendorSkuController');
 const skuCtrl = require('../controllers/skuController');
@@ -84,6 +85,7 @@ router.get('/plant-type-defaults', authenticate, plantTypeDefaultCtrl.list);
 router.put('/plant-type-defaults/:plant_type', authenticate, requireRole('admin', 'manager'), plantTypeDefaultCtrl.upsert);
 
 // --- Plants (public read, protected write) ---
+router.get('/plants/usda-lookup', authenticate, usdaCtrl.lookup);
 router.get('/plants/duplicates', authenticate, requireRole('admin', 'manager'), plantCtrl.duplicates);
 router.post('/plants/merge', authenticate, requireRole('admin', 'manager'), plantCtrl.merge);
 router.get('/plants', plantCtrl.list);
