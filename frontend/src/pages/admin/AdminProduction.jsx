@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   production as productionApi,
   productionGroups as groupsApi,
+  productionStages as stagesApi,
   plants as plantsApi,
   locations as locationsApi,
   trayTypes as trayTypesApi,
@@ -16,7 +17,7 @@ import { SortHeader, MultiSortBar } from '../../components/ui/SortControls';
 import { useMultiSort, applyMultiSort } from '../../hooks/useMultiSort';
 import {
   Plus, Pencil, Trash2, ChevronRight,
-  LayoutList, Layers, Sprout, FolderOpen,
+  LayoutList, Layers, Sprout, FolderOpen, Leaf,
 } from 'lucide-react';
 
 const PROP_TYPES = ['seed', 'cutting', 'division', 'layering', 'grafting', 'other'];
@@ -610,10 +611,293 @@ function BatchForm({ batch, onClose, defaultPlantId, defaultGroupId }) {
   );
 }
 
+// ─── Potting Stages Modal ─────────────────────────────────────────────────────
+
+const STAGE_OPTIONS = [
+  { value: 'potted', label: 'Potted',    hint: 'Moved to individual containers' },
+  { value: 'tray',   label: 'In Tray',   hint: 'Still in germination tray' },
+  { value: 'loss',   label: 'Loss',      hint: 'Died, failed, or culled' },
+];
+const STAGE_COLORS = {
+  potted: 'bg-green-100 text-green-800',
+  tray:   'bg-amber-100 text-amber-800',
+  loss:   'bg-red-100 text-red-700',
+};
+
+function todayIso() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function StagesModal({ batch, onClose }) {
+  const qc = useQueryClient();
+  const [form, setForm]   = useState({ stage: 'potted', quantity: '', date: todayIso(), notes: '' });
+  const [editId, setEditId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [error, setError] = useState('');
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['production-stages', batch.id],
+    queryFn:  () => stagesApi.list(batch.id).then(r => r.data),
+    staleTime: 10_000,
+  });
+
+  const stages    = data?.stages    ?? [];
+  const totals    = data?.totals    ?? { potted: 0, tray: 0, loss: 0, in_tray: 0 };
+  const cellCount = data?.cell_count ?? 1;
+  // seed_count accounts for trays × cells per tray; falls back to quantity_started
+  const started   = data?.seed_count ?? (batch.quantity_started || 0);
+
+  const createMutation = useMutation({
+    mutationFn: (d) => stagesApi.create(batch.id, d),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['production-stages', batch.id] });
+      qc.invalidateQueries({ queryKey: ['production'] });
+      setForm(f => ({ ...f, quantity: '', notes: '' }));
+      setError('');
+    },
+    onError: (e) => setError(e.response?.data?.error || 'Failed to save'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => stagesApi.update(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['production-stages', batch.id] });
+      qc.invalidateQueries({ queryKey: ['production'] });
+      setEditId(null);
+    },
+    onError: (e) => setError(e.response?.data?.error || 'Failed to update'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => stagesApi.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['production-stages', batch.id] });
+      qc.invalidateQueries({ queryKey: ['production'] });
+    },
+  });
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    setError('');
+    if (!form.quantity || Number(form.quantity) < 1) return setError('Enter a quantity');
+    if (!form.date) return setError('Enter a date');
+    createMutation.mutate({ ...form, quantity: parseInt(form.quantity, 10) });
+  };
+
+  const startEdit = (s) => {
+    setEditId(s.id);
+    setEditForm({ stage: s.stage, quantity: String(s.quantity), date: s.date, notes: s.notes || '' });
+  };
+
+  const handleUpdate = (e, id) => {
+    e.preventDefault();
+    updateMutation.mutate({ id, data: { ...editForm, quantity: parseInt(editForm.quantity, 10) } });
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Summary bar */}
+      <div className="bg-forest-50 rounded-lg px-4 py-3 flex flex-wrap gap-4 items-center text-sm">
+        <div className="text-forest-600">
+          <span className="font-semibold text-forest-900">{started.toLocaleString()}</span> seeds started
+          {cellCount > 1 && (
+            <span className="text-xs text-forest-400 ml-1.5">
+              ({batch.quantity_started} tray{batch.quantity_started !== 1 ? 's' : ''} × {cellCount} cells)
+            </span>
+          )}
+        </div>
+        <div className="text-forest-400">→</div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-400" />
+          <span className="font-semibold text-green-800">{totals.potted.toLocaleString()}</span>
+          <span className="text-forest-500">potted</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" />
+          <span className="font-semibold text-amber-800">{totals.in_tray.toLocaleString()}</span>
+          <span className="text-forest-500">in tray</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-400" />
+          <span className="font-semibold text-red-700">{totals.loss.toLocaleString()}</span>
+          <span className="text-forest-500">loss</span>
+        </div>
+        {totals.potted + totals.loss > started && (
+          <span className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-0.5">⚠ entries exceed quantity started</span>
+        )}
+      </div>
+
+      {/* Stage log */}
+      <div>
+        <h3 className="text-xs font-semibold text-forest-500 uppercase tracking-wide mb-2">Stage Log</h3>
+        {isLoading ? (
+          <div className="space-y-2">
+            {[1,2].map(i => <div key={i} className="h-10 bg-forest-100 rounded animate-pulse" />)}
+          </div>
+        ) : stages.length === 0 ? (
+          <p className="text-sm text-forest-400 py-4 text-center border border-dashed border-forest-200 rounded-lg">
+            No stage entries yet. Add the first one below.
+          </p>
+        ) : (
+          <div className="divide-y divide-forest-100 border border-forest-100 rounded-lg overflow-hidden">
+            {stages.map(s => (
+              <div key={s.id} className="px-4 py-3 bg-white hover:bg-forest-50/40 transition-colors">
+                {editId === s.id ? (
+                  <form onSubmit={(e) => handleUpdate(e, s.id)} className="flex flex-wrap items-end gap-2">
+                    <div>
+                      <label className="label text-xs">Stage</label>
+                      <select
+                        className="select text-sm py-1"
+                        value={editForm.stage}
+                        onChange={e => setEditForm(f => ({ ...f, stage: e.target.value }))}
+                      >
+                        {STAGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label text-xs">Qty</label>
+                      <input
+                        className="input w-20 text-sm py-1"
+                        type="number" min="1"
+                        value={editForm.quantity}
+                        onChange={e => setEditForm(f => ({ ...f, quantity: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="label text-xs">Date</label>
+                      <input
+                        className="input text-sm py-1"
+                        type="date"
+                        value={editForm.date}
+                        onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-32">
+                      <label className="label text-xs">Notes</label>
+                      <input
+                        className="input text-sm py-1"
+                        value={editForm.notes}
+                        onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
+                        placeholder="optional"
+                      />
+                    </div>
+                    <div className="flex gap-1.5 pb-0.5">
+                      <button type="submit" disabled={updateMutation.isPending} className="btn-primary text-xs px-3 py-1.5">Save</button>
+                      <button type="button" onClick={() => setEditId(null)} className="btn-secondary text-xs px-3 py-1.5">Cancel</button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 mt-0.5 ${STAGE_COLORS[s.stage]}`}>
+                        {STAGE_OPTIONS.find(o => o.value === s.stage)?.label ?? s.stage}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-semibold text-forest-900 text-sm">{s.quantity.toLocaleString()}</span>
+                          <span className="text-xs text-forest-400">{fmtDate(s.date)}</span>
+                        </div>
+                        {s.notes && <p className="text-xs text-forest-500 mt-0.5 truncate">{s.notes}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                      <button onClick={() => startEdit(s)} className="btn-ghost px-2 py-1" title="Edit">
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => deleteMutation.mutate(s.id)}
+                        disabled={deleteMutation.isPending}
+                        className="btn px-2 py-1 text-red-400 hover:bg-red-50 rounded-lg"
+                        title="Delete"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Add entry form */}
+      <div>
+        <h3 className="text-xs font-semibold text-forest-500 uppercase tracking-wide mb-2">Add Stage Entry</h3>
+        <form onSubmit={handleAdd} className="bg-forest-50 rounded-lg p-4 space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label className="label text-xs">Stage *</label>
+              <select
+                className="select text-sm"
+                value={form.stage}
+                onChange={e => setForm(f => ({ ...f, stage: e.target.value }))}
+              >
+                {STAGE_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-forest-400 mt-1">
+                {STAGE_OPTIONS.find(o => o.value === form.stage)?.hint}
+              </p>
+            </div>
+            <div>
+              <label className="label text-xs">Quantity *</label>
+              <input
+                className="input text-sm"
+                type="number"
+                min="1"
+                value={form.quantity}
+                onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
+                placeholder="e.g. 50"
+                required
+              />
+            </div>
+            <div>
+              <label className="label text-xs">Date *</label>
+              <input
+                className="input text-sm"
+                type="date"
+                value={form.date}
+                onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="label text-xs">Notes</label>
+              <input
+                className="input text-sm"
+                value={form.notes}
+                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="optional"
+              />
+            </div>
+          </div>
+          {error && <p className="text-red-600 text-sm bg-red-50 rounded px-3 py-2">{error}</p>}
+          <div className="flex justify-end">
+            <button type="submit" disabled={createMutation.isPending} className="btn-primary text-sm">
+              {createMutation.isPending ? 'Saving…' : 'Add Entry'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─── Batch Row ────────────────────────────────────────────────────────────────
 
-function BatchRow({ batch, showPlant, onEdit, onDelete }) {
+function stageSummary(batch) {
+  const stages = batch.stages ?? [];
+  if (!stages.length) return null;
+  const potted = stages.filter(s => s.stage === 'potted').reduce((n, s) => n + s.quantity, 0);
+  const loss   = stages.filter(s => s.stage === 'loss').reduce((n, s) => n + s.quantity, 0);
+  return { potted, loss };
+}
+
+function BatchRow({ batch, showPlant, onEdit, onDelete, onStages }) {
   const rate = germRate(batch);
+  const stg  = stageSummary(batch);
   return (
     <tr className="hover:bg-forest-50/60 transition-colors">
       {showPlant && (
@@ -660,6 +944,16 @@ function BatchRow({ batch, showPlant, onEdit, onDelete }) {
         {batch.quantity_successful != null && (
           <span className="text-forest-400 text-xs"> / {batch.quantity_successful}</span>
         )}
+        {stg && (
+          <div className="flex items-center justify-center gap-2 mt-0.5">
+            {stg.potted > 0 && (
+              <span className="text-xs text-green-700 font-medium">{stg.potted} potted</span>
+            )}
+            {stg.loss > 0 && (
+              <span className="text-xs text-red-600 font-medium">{stg.loss} loss</span>
+            )}
+          </div>
+        )}
       </td>
       <td className="px-4 py-3 text-center hidden md:table-cell">
         {rate != null ? (
@@ -673,6 +967,13 @@ function BatchRow({ batch, showPlant, onEdit, onDelete }) {
       <td className="px-4 py-3 text-xs text-forest-500 hidden lg:table-cell">{fmtDate(batch.estimated_ready_date)}</td>
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1">
+          <button
+            onClick={() => onStages(batch)}
+            className={`btn-ghost px-2 py-1.5 ${(batch.stages?.length ?? 0) > 0 ? 'text-green-600' : 'text-forest-400'}`}
+            title="Potting stages"
+          >
+            <Leaf size={14} />
+          </button>
           <button onClick={() => onEdit(batch)} className="btn-ghost px-2 py-1.5" title="Edit">
             <Pencil size={14} />
           </button>
@@ -698,6 +999,7 @@ export default function AdminProduction() {
   const [addForPlant, setAddForPlant] = useState(null);
   const [addForGroup, setAddForGroup] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [stagesBatch, setStagesBatch] = useState(null);
 
   // Group modal state
   const [editGroup, setEditGroup] = useState(null);
@@ -921,7 +1223,7 @@ export default function AdminProduction() {
                       <thead>{tableHeaders(false)}</thead>
                       <tbody className="divide-y divide-forest-50">
                         {sortedPlantBatches.map(b => (
-                          <BatchRow key={b.id} batch={b} showPlant={false} onEdit={setEditBatch} onDelete={setDeleteTarget} />
+                          <BatchRow key={b.id} batch={b} showPlant={false} onEdit={setEditBatch} onDelete={setDeleteTarget} onStages={setStagesBatch} />
                         ))}
                       </tbody>
                     </table>
@@ -955,7 +1257,7 @@ export default function AdminProduction() {
                     </td>
                   </tr>
                 ) : sortedBatches.map(b => (
-                  <BatchRow key={b.id} batch={b} showPlant onEdit={setEditBatch} onDelete={setDeleteTarget} />
+                  <BatchRow key={b.id} batch={b} showPlant onEdit={setEditBatch} onDelete={setDeleteTarget} onStages={setStagesBatch} />
                 ))}
               </tbody>
             </table>
@@ -1048,7 +1350,7 @@ export default function AdminProduction() {
                         <thead>{tableHeaders(true)}</thead>
                         <tbody className="divide-y divide-forest-50">
                           {sortedGroupBatches.map(b => (
-                            <BatchRow key={b.id} batch={b} showPlant onEdit={setEditBatch} onDelete={setDeleteTarget} />
+                            <BatchRow key={b.id} batch={b} showPlant onEdit={setEditBatch} onDelete={setDeleteTarget} onStages={setStagesBatch} />
                           ))}
                         </tbody>
                       </table>
@@ -1094,6 +1396,16 @@ export default function AdminProduction() {
           onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
           onCancel={() => setDeleteTarget(null)}
         />
+      )}
+
+      {stagesBatch && (
+        <Modal
+          title={`Potting Stages — ${stagesBatch.plant?.scientific_name || stagesBatch.plant?.common_name}`}
+          onClose={() => setStagesBatch(null)}
+          size="md"
+        >
+          <StagesModal batch={stagesBatch} onClose={() => setStagesBatch(null)} />
+        </Modal>
       )}
 
       {/* ── Group Modals ──────────────────────────────────────────────────────── */}

@@ -43,6 +43,7 @@ const shopifyCtrl = require('../controllers/shopifyController');
 const inatCtrl = require('../controllers/iNaturalistController');
 const productionCtrl = require('../controllers/productionController');
 const productionGroupCtrl = require('../controllers/productionGroupController');
+const productionStageCtrl = require('../controllers/productionStageController');
 const variantCtrl = require('../controllers/variantController');
 const vendorSkuCtrl = require('../controllers/vendorSkuController');
 const skuCtrl = require('../controllers/skuController');
@@ -174,6 +175,11 @@ router.delete('/vendor-skus/:id', authenticate, requireRole('admin', 'manager'),
 
 // --- Production Batches ---
 router.get('/production', authenticate, productionCtrl.list);
+// Stage routes before /:id so 'stages' isn't caught as an id param
+router.put('/production/stages/:stage_id', authenticate, requireRole('admin', 'manager', 'staff'), productionStageCtrl.update);
+router.delete('/production/stages/:stage_id', authenticate, requireRole('admin', 'manager', 'staff'), productionStageCtrl.remove);
+router.get('/production/:id/stages', authenticate, productionStageCtrl.list);
+router.post('/production/:id/stages', authenticate, requireRole('admin', 'manager', 'staff'), productionStageCtrl.create);
 router.get('/production/:id', authenticate, productionCtrl.get);
 router.post('/production', authenticate, requireRole('admin', 'manager', 'staff'), productionCtrl.create);
 router.put('/production/:id', authenticate, requireRole('admin', 'manager', 'staff'), productionCtrl.update);
@@ -201,6 +207,7 @@ router.post('/shopify/products/:plant_id/push', authenticate, requireRole('admin
 router.get('/shopify/locations', authenticate, shopifyCtrl.getLocations);
 router.post('/shopify/webhooks/register', authenticate, requireRole('admin'), shopifyCtrl.registerWebhooks);
 router.get('/shopify/webhooks', authenticate, requireRole('admin'), shopifyCtrl.listWebhooks);
+router.get('/shopify/orders/open-count', authenticate, shopifyCtrl.getOpenOrdersCount);
 
 // --- iNaturalist photo lookup ---
 router.get('/inaturalist/preview',                  authenticate, inatCtrl.previewPhoto);

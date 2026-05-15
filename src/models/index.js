@@ -28,6 +28,7 @@ const NurseryOrderItem = require('./NurseryOrderItem');
 const VendorOrder = require('./VendorOrder');
 const VendorOrderItem = require('./VendorOrderItem');
 const PotSizeCost = require('./PotSizeCost');
+const ProductionBatchStage = require('./ProductionBatchStage');
 
 // Plant -> PlantVariant (one plant, many size/container variants)
 Plant.hasMany(PlantVariant, { foreignKey: 'plant_id', as: 'variants' });
@@ -95,6 +96,10 @@ SeedLot.belongsTo(Plant, { foreignKey: 'plant_id', as: 'plant' });
 SeedLot.hasMany(Production, { foreignKey: 'seed_lot_id', as: 'production_batches' });
 Production.belongsTo(SeedLot, { foreignKey: 'seed_lot_id', as: 'seed_lot' });
 
+// Production batch -> Stages (potting log)
+Production.hasMany(ProductionBatchStage, { foreignKey: 'batch_id', as: 'stages' });
+ProductionBatchStage.belongsTo(Production, { foreignKey: 'batch_id', as: 'batch' });
+
 // LandscapingProject -> LandscapingProjectPlant
 LandscapingProject.hasMany(LandscapingProjectPlant, { foreignKey: 'project_id', as: 'plants' });
 LandscapingProjectPlant.belongsTo(LandscapingProject, { foreignKey: 'project_id', as: 'project' });
@@ -158,4 +163,5 @@ module.exports = {
   LandscapingProject,
   LandscapingProjectPlant,
   JobPhoto,
+  ProductionBatchStage,
 };

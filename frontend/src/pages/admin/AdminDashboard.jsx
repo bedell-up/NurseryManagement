@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { plants as plantsApi, inventory, preorders, inat } from '../../api/client';
-import { Leaf, Package, ShoppingBag, TrendingDown, AlertCircle, ImagePlus, CheckCircle, XCircle, Loader, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import { plants as plantsApi, inventory, preorders, inat, shopify as shopifyApi } from '../../api/client';
+import { Leaf, ShoppingBag, ClipboardList, TrendingDown, AlertCircle, ImagePlus, CheckCircle, XCircle, Loader, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-function Stat({ icon: Icon, label, value, color, to }) {
+function Stat({ icon: Icon, label, value, color, to, href }) {
   const content = (
     <div className="card p-5 flex items-start gap-4 hover:shadow-md transition-shadow">
       <div className={`p-2.5 rounded-xl ${color}`}><Icon size={20} className="text-white" /></div>
@@ -14,6 +14,7 @@ function Stat({ icon: Icon, label, value, color, to }) {
       </div>
     </div>
   );
+  if (href) return <a href={href} target="_blank" rel="noreferrer">{content}</a>;
   return to ? <Link to={to}>{content}</Link> : content;
 }
 
@@ -256,10 +257,10 @@ function BulkImageFetcher() {
 }
 
 export default function AdminDashboard() {
-  const { data: plantData }    = useQuery({ queryKey: ['plants','dash'],    queryFn: () => plantsApi.list({ limit: 1 }).then(r => r.data) });
-  const { data: invData }      = useQuery({ queryKey: ['inventory','dash'], queryFn: () => inventory.list({ limit: 1 }).then(r => r.data) });
-  const { data: lowData }      = useQuery({ queryKey: ['inventory','low'],  queryFn: () => inventory.list({ low_stock: true, limit: 10 }).then(r => r.data) });
-  const { data: preorderData } = useQuery({ queryKey: ['preorders','dash'], queryFn: () => preorders.list({ status: 'confirmed', limit: 1 }).then(r => r.data) });
+  const { data: plantData }      = useQuery({ queryKey: ['plants','dash'],       queryFn: () => plantsApi.list({ limit: 1 }).then(r => r.data) });
+  const { data: openOrdersData } = useQuery({ queryKey: ['shopify','open-orders'], queryFn: () => shopifyApi.openOrdersCount().then(r => r.data), staleTime: 5 * 60_000 });
+  const { data: lowData }        = useQuery({ queryKey: ['inventory','low'],      queryFn: () => inventory.list({ low_stock: true, limit: 10 }).then(r => r.data) });
+  const { data: preorderData }   = useQuery({ queryKey: ['preorders','dash'],     queryFn: () => preorders.list({ status: 'confirmed', limit: 1 }).then(r => r.data) });
 
   return (
     <div className="p-6 max-w-screen-xl mx-auto">
@@ -267,7 +268,7 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Stat icon={Leaf}        label="Total Plants"      value={plantData?.total}          color="bg-forest-600" to="/admin/plants" />
-        <Stat icon={Package}     label="Inventory Records" value={invData?.total}             color="bg-earth-500"  to="/admin/inventory" />
+        <Stat icon={ClipboardList} label="Open Orders"      value={openOrdersData?.count}      color="bg-earth-500"  href="https://bloomsday-natives.myshopify.com/admin/orders?fulfillment_status=unfulfilled" />
         <Stat icon={ShoppingBag} label="Active Pre-orders" value={preorderData?.total}        color="bg-blue-500"   to="/admin/preorders" />
         <Stat icon={TrendingDown}label="Low Stock Items"   value={lowData?.inventory?.length} color="bg-red-500"    to="/admin/inventory?low=true" />
       </div>

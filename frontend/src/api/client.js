@@ -133,6 +133,14 @@ export const production = {
   remove: (id)     => api.delete(`/production/${id}`),
 };
 
+// Production Batch Stages (potting log)
+export const productionStages = {
+  list:   (batchId)       => api.get(`/production/${batchId}/stages`),
+  create: (batchId, data) => api.post(`/production/${batchId}/stages`, data),
+  update: (stageId, data) => api.put(`/production/stages/${stageId}`, data),
+  remove: (stageId)       => api.delete(`/production/stages/${stageId}`),
+};
+
 // Production Batch Groups
 export const productionGroups = {
   list:   ()        => api.get('/production-groups'),
@@ -283,6 +291,11 @@ export const barcodeSheet = {
 export const scan = {
   byBarcode: (barcode) => api.get(`/scan/barcode/${encodeURIComponent(barcode.toUpperCase())}`),
   bySku:     (sku)     => api.get(`/scan/sku/${encodeURIComponent(sku)}`),
+};
+
+// Shopify
+export const shopify = {
+  openOrdersCount: () => api.get('/shopify/orders/open-count'),
 };
 
 // Import

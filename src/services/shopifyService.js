@@ -288,6 +288,12 @@ async function listWebhooks() {
   return shopifyRequest('GET', '/webhooks.json');
 }
 
+// Count open (unfulfilled) Shopify orders
+async function getOpenOrdersCount() {
+  const data = await shopifyRequest('GET', '/orders/count.json?status=open&fulfillment_status=unfulfilled');
+  return data.count ?? 0;
+}
+
 module.exports = {
   syncPriceToShopify,
   syncInventoryToShopify,
@@ -302,4 +308,5 @@ module.exports = {
   getThemeAsset,
   putThemeAsset,
   listThemeAssets,
+  getOpenOrdersCount,
 };

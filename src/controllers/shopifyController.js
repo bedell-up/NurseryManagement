@@ -18,7 +18,10 @@ async function webhookOrderCreated(req, res) {
   if (!verifyWebhook(req)) return res.status(401).send('Unauthorized');
   res.status(200).send('OK'); // Acknowledge quickly
 
-  const order = req.body;
+  // req.rawBody captured before express.json() consumed the stream
+  const order = typeof req.body === 'object' && req.body !== null
+    ? req.body
+    : JSON.parse(req.rawBody || '{}');
   for (const item of order.line_items || []) {
     const variant = await PlantVariant.findOne({ where: { shopify_variant_id: String(item.variant_id) } });
     if (!variant) continue;
@@ -86,7 +89,9 @@ async function webhookFulfillmentCreated(req, res) {
   res.status(200).send('OK');
 
   // orders/fulfilled sends the full order; process each fulfillment in it
-  const order = req.body;
+  const order = typeof req.body === 'object' && req.body !== null
+    ? req.body
+    : JSON.parse(req.rawBody || '{}');
   for (const fulfillment of order.fulfillments || []) {
     await processFulfillment(fulfillment, order.id);
   }
@@ -161,4 +166,9 @@ async function listWebhooks(req, res) {
   res.json(data);
 }
 
-module.exports = { webhookOrderCreated, webhookFulfillmentCreated, pushProduct, getLocations, registerWebhooks, listWebhooks };
+async function getOpenOrdersCount(req, res) {
+  const count = await shopifyService.getOpenOrdersCount();
+  res.json({ count });
+}
+
+module.exports = { webhookOrderCreated, webhookFulfillmentCreated, pushProduct, getLocations, registerWebhooks, listWebhooks, getOpenOrdersCount };

@@ -1,13 +1,14 @@
-const { Production, Plant, PlantVariant, StorageLocation, SeedLot } = require('../models');
+const { Production, Plant, PlantVariant, StorageLocation, SeedLot, ProductionBatchStage } = require('../models');
 
 const PLANT_ATTRS = ['id', 'common_name', 'scientific_name', 'plant_type', 'image_url'];
 const VARIANT_ATTRS = ['id', 'container_size', 'sku'];
 
 const include = [
-  { model: Plant,           as: 'plant',    attributes: PLANT_ATTRS },
-  { model: PlantVariant,    as: 'variant',  attributes: VARIANT_ATTRS },
-  { model: StorageLocation, as: 'location', attributes: ['id', 'name'] },
-  { model: SeedLot,         as: 'seed_lot', attributes: ['id', 'quantity_grams', 'sourced_from'] },
+  { model: Plant,                as: 'plant',    attributes: PLANT_ATTRS },
+  { model: PlantVariant,         as: 'variant',  attributes: VARIANT_ATTRS },
+  { model: StorageLocation,      as: 'location', attributes: ['id', 'name'] },
+  { model: SeedLot,              as: 'seed_lot', attributes: ['id', 'quantity_grams', 'sourced_from'] },
+  { model: ProductionBatchStage, as: 'stages',   attributes: ['id', 'stage', 'quantity', 'date'] },
 ];
 
 async function adjustSeedLot(lotId, deltaG) {

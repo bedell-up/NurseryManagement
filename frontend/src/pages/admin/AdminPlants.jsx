@@ -9,7 +9,7 @@ import { SortHeader, MultiSortBar } from '../../components/ui/SortControls';
 import { useMultiSort, applyMultiSort } from '../../hooks/useMultiSort';
 import {
   Plus, Search, Pencil, Trash2, Eye, EyeOff, ImagePlus,
-  ChevronRight, ChevronDown, X, Store, CheckSquare,
+  ChevronRight, ChevronDown, X, Store, CheckSquare, AlertCircle,
 } from 'lucide-react';
 import { inat } from '../../api/client';
 
@@ -28,6 +28,42 @@ function TypeBadge({ type }) {
     vine: 'badge-earth', aquatic: 'badge-blue', perennial_vegetable: 'badge-earth', other: 'badge-gray',
   };
   return <span className={colors[type] || 'badge-gray'}>{TYPE_LABELS[type] || type}</span>;
+}
+
+function profileCompleteness(plant) {
+  const missingIdentity = [];
+  if (!plant.scientific_name) missingIdentity.push('Scientific Name');
+  if (!plant.plant_type)      missingIdentity.push('Plant Type');
+
+  const missingGrowing = [];
+  if (!plant.sun_requirements)  missingGrowing.push('Sun Requirements');
+  if (!plant.water_requirements) missingGrowing.push('Water/Moisture');
+  if (!plant.soil_type)         missingGrowing.push('Soil Type');
+  if (!plant.hardiness_zone_min && !plant.hardiness_zone_max) missingGrowing.push('Hardiness Zone');
+
+  const identityOk  = missingIdentity.length === 0;
+  const growingOk   = missingGrowing.length === 0;
+
+  if (identityOk && growingOk) return { color: 'green', missing: [] };
+  if (identityOk || growingOk) return { color: 'yellow', missing: [...missingIdentity, ...missingGrowing] };
+  return { color: 'red', missing: [...missingIdentity, ...missingGrowing] };
+}
+
+function ProfileBadge({ plant }) {
+  const { color, missing } = profileCompleteness(plant);
+  if (color === 'green') return null;
+
+  const styles = {
+    yellow: 'text-amber-500',
+    red:    'text-red-500',
+  };
+  const tooltip = 'Missing: ' + missing.join(', ');
+
+  return (
+    <span title={tooltip} className={`flex-shrink-0 ${styles[color]}`}>
+      <AlertCircle size={13} />
+    </span>
+  );
 }
 
 const PLANTS_SORT_COLS = [
@@ -408,6 +444,7 @@ export default function AdminPlants() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [incompleteOnly, setIncompleteOnly] = useState(false);
   const { sortCol, sortDir, sort2Col, setSort2Col, sort2Dir, setSort2Dir, handleSort } = useMultiSort('scientific_name');
   const [editPlant, setEditPlant] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -456,11 +493,13 @@ export default function AdminPlants() {
 
   const handleSearch = (e) => { setSearch(e.target.value); setPage(1); setSelected(new Set()); };
   const handleType   = (e) => { setTypeFilter(e.target.value); setPage(1); setSelected(new Set()); };
+  const handleIncompleteToggle = () => { setIncompleteOnly(v => !v); setPage(1); setSelected(new Set()); };
 
-  const sortedPlants = useMemo(
-    () => applyMultiSort(data?.plants ?? [], sortCol, sortDir, sort2Col, sort2Dir, plantsGetVal),
-    [data?.plants, sortCol, sortDir, sort2Col, sort2Dir],
-  );
+  const sortedPlants = useMemo(() => {
+    let list = applyMultiSort(data?.plants ?? [], sortCol, sortDir, sort2Col, sort2Dir, plantsGetVal);
+    if (incompleteOnly) list = list.filter(p => profileCompleteness(p).color !== 'green');
+    return list;
+  }, [data?.plants, sortCol, sortDir, sort2Col, sort2Dir, incompleteOnly]);
 
   const toggleSelect = (id) => setSelected(prev => {
     const next = new Set(prev);
@@ -510,6 +549,18 @@ export default function AdminPlants() {
             <option value="">All Types</option>
             {TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t] || t}</option>)}
           </select>
+          <button
+            onClick={handleIncompleteToggle}
+            className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border transition-colors shrink-0 ${
+              incompleteOnly
+                ? 'bg-amber-50 border-amber-400 text-amber-700 font-medium'
+                : 'border-forest-200 text-forest-500 hover:border-forest-400 hover:text-forest-700'
+            }`}
+            title="Show only plants with incomplete profiles"
+          >
+            <AlertCircle size={14} />
+            Incomplete
+          </button>
         </div>
         <MultiSortBar
           columns={PLANTS_SORT_COLS}
@@ -586,8 +637,11 @@ export default function AdminPlants() {
                         : <div className="w-10 h-10 rounded-lg bg-forest-100 flex-shrink-0 flex items-center justify-center text-forest-300 text-xs">🌿</div>
                       }
                       <div>
-                        <div className="font-medium italic text-forest-900">
-                          {plant.scientific_name || <span className="not-italic text-forest-500 text-sm">{plant.common_name}</span>}
+                        <div className="flex items-center gap-1.5">
+                          <div className="font-medium italic text-forest-900">
+                            {plant.scientific_name || <span className="not-italic text-forest-500 text-sm">{plant.common_name}</span>}
+                          </div>
+                          <ProfileBadge plant={plant} />
                         </div>
                         {plant.scientific_name && (
                           <div className="text-xs text-forest-500">{plant.common_name}</div>

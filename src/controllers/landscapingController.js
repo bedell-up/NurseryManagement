@@ -1,4 +1,4 @@
-const { LandscapingProject, LandscapingProjectPlant, PlantVariant, Plant, Inventory, InventoryLog } = require('../models');
+const { LandscapingProject, LandscapingProjectPlant, PlantVariant, Plant, Inventory, InventoryLog, InventoryLocationSplit } = require('../models');
 const { geocodeAddress } = require('../services/geocodingService');
 
 // ---- Projects ----
@@ -144,6 +144,11 @@ async function addPlantToProject(req, res) {
       notes: notes || `Reserved for ${project.name}`,
       location: location_note || null,
     });
+
+    // Remove from nursery location splits; place in a "Job Site" pending split
+    const jobSiteLabel = `Job Site: ${project.name}`;
+    await _deductFromNurserySplits(inv.id, jobSiteLabel, qty);
+    await _adjustJobSiteSplit(inv.id, jobSiteLabel, qty);
   }
 
   const plant = await LandscapingProjectPlant.create({
@@ -175,16 +180,65 @@ async function updateProjectPlant(req, res) {
   const data = {};
   allowed.forEach(k => { if (req.body[k] !== undefined) data[k] = req.body[k]; });
 
-  // Sync inventory reservation when quantity changes
-  if (req.body.quantity !== undefined) {
-    const newQty = parseInt(req.body.quantity, 10);
-    const diff = newQty - plant.quantity;
-    if (diff !== 0) {
-      const inv = await Inventory.findOne({ where: { variant_id: plant.variant_id } });
-      if (inv) {
-        const newReserved = Math.max(0, (inv.quantity_reserved || 0) + diff);
-        await inv.update({ quantity_reserved: newReserved });
+  const newStatus = req.body.status;
+  const newQty = req.body.quantity !== undefined ? parseInt(req.body.quantity, 10) : plant.quantity;
+  const statusChangingToInstalled = newStatus === 'installed' && plant.status !== 'installed';
+  const qtyDiff = newQty - plant.quantity;
+
+  if (statusChangingToInstalled) {
+    // Plants are in the ground — fully remove from inventory
+    const inv = await Inventory.findOne({ where: { variant_id: plant.variant_id } });
+    if (inv) {
+      const project = await LandscapingProject.findByPk(plant.project_id);
+      const newOnHand = Math.max(0, inv.quantity_on_hand - newQty);
+      const newReserved = Math.max(0, (inv.quantity_reserved || 0) - newQty);
+      await inv.update({ quantity_on_hand: newOnHand, quantity_reserved: newReserved });
+
+      if (project) {
+        await _adjustJobSiteSplit(inv.id, `Job Site: ${project.name}`, -newQty);
       }
+
+      await InventoryLog.create({
+        variant_id: plant.variant_id,
+        user_id: req.user?.id || null,
+        change_type: 'landscaping_transfer',
+        quantity_before: inv.quantity_on_hand,
+        quantity_change: -newQty,
+        quantity_after: newOnHand,
+        reference_id: plant.project_id,
+        notes: `Planted/installed`,
+      });
+    }
+  } else if (plant.status === 'planned' && qtyDiff !== 0) {
+    // Quantity change while still planned — adjust reservation and location splits
+    const inv = await Inventory.findOne({ where: { variant_id: plant.variant_id } });
+    if (inv) {
+      if (qtyDiff > 0) {
+        const available = inv.quantity_on_hand - (inv.quantity_reserved || 0);
+        if (available < qtyDiff) {
+          return res.status(400).json({ error: `Only ${available} additional units available` });
+        }
+        const project = await LandscapingProject.findByPk(plant.project_id);
+        if (project) {
+          await _deductFromNurserySplits(inv.id, `Job Site: ${project.name}`, qtyDiff);
+          await _adjustJobSiteSplit(inv.id, `Job Site: ${project.name}`, qtyDiff);
+        }
+      } else {
+        // Reducing — shrink the job-site split
+        const project = await LandscapingProject.findByPk(plant.project_id);
+        if (project) {
+          await _adjustJobSiteSplit(inv.id, `Job Site: ${project.name}`, qtyDiff);
+        }
+      }
+      const newReserved = Math.max(0, (inv.quantity_reserved || 0) + qtyDiff);
+      await inv.update({ quantity_reserved: newReserved });
+    }
+  } else if (req.body.quantity !== undefined && qtyDiff !== 0 && plant.status !== 'installed') {
+    // Quantity change in 'removed' or other non-installed status — just sync reservation
+    const inv = await Inventory.findOne({ where: { variant_id: plant.variant_id } });
+    if (inv) {
+      const newReserved = Math.max(0, (inv.quantity_reserved || 0) + qtyDiff);
+      await inv.update({ quantity_reserved: newReserved });
     }
   }
 
@@ -200,6 +254,14 @@ async function removeProjectPlant(req, res) {
 
   const inv = await Inventory.findOne({ where: { variant_id: plant.variant_id } });
   if (inv) {
+    // Clean up the job-site split if this plant was still in planned state
+    if (plant.status === 'planned') {
+      const project = await LandscapingProject.findByPk(plant.project_id);
+      if (project) {
+        await _adjustJobSiteSplit(inv.id, `Job Site: ${project.name}`, -plant.quantity);
+      }
+    }
+
     if (return_to_inventory) {
       // Return the physical plants back to on-hand count
       const newOnHand = inv.quantity_on_hand + plant.quantity;
@@ -223,6 +285,44 @@ async function removeProjectPlant(req, res) {
 
   await plant.destroy();
   res.json({ ok: true });
+}
+
+// ---- Location split helpers ----
+
+async function _deductFromNurserySplits(inventoryId, skipLabel, qty) {
+  const splits = await InventoryLocationSplit.findAll({
+    where: { inventory_id: inventoryId },
+    order: [['quantity', 'DESC']],
+  });
+  let toDeduct = qty;
+  for (const split of splits) {
+    if (toDeduct <= 0) break;
+    if (split.location === skipLabel) continue;
+    const deduct = Math.min(split.quantity, toDeduct);
+    const remaining = split.quantity - deduct;
+    if (remaining <= 0) {
+      await split.destroy();
+    } else {
+      await split.update({ quantity: remaining });
+    }
+    toDeduct -= deduct;
+  }
+}
+
+async function _adjustJobSiteSplit(inventoryId, label, delta) {
+  const split = await InventoryLocationSplit.findOne({
+    where: { inventory_id: inventoryId, location: label },
+  });
+  if (split) {
+    const newQty = split.quantity + delta;
+    if (newQty <= 0) {
+      await split.destroy();
+    } else {
+      await split.update({ quantity: newQty });
+    }
+  } else if (delta > 0) {
+    await InventoryLocationSplit.create({ inventory_id: inventoryId, location: label, quantity: delta });
+  }
 }
 
 module.exports = {
