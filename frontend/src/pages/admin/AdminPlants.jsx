@@ -49,18 +49,31 @@ function profileCompleteness(plant) {
   return { color: 'red', missing: [...missingIdentity, ...missingGrowing] };
 }
 
-function ProfileBadge({ plant }) {
+function ProfileBadge({ plant, asColumn }) {
   const { color, missing } = profileCompleteness(plant);
+  const tooltip = missing.length ? 'Missing: ' + missing.join(', ') : '';
+
+  if (asColumn) {
+    if (color === 'green') {
+      return <span className="text-xs text-green-600 font-medium">Complete</span>;
+    }
+    const style = color === 'yellow'
+      ? 'text-amber-700 bg-amber-50 border-amber-200'
+      : 'text-red-700 bg-red-50 border-red-200';
+    const label = color === 'yellow' ? 'Partial' : 'Incomplete';
+    return (
+      <span title={tooltip} className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${style}`}>
+        <AlertCircle size={11} />
+        {label}
+      </span>
+    );
+  }
+
+  // Inline icon variant (kept for potential reuse)
   if (color === 'green') return null;
-
-  const styles = {
-    yellow: 'text-amber-500',
-    red:    'text-red-500',
-  };
-  const tooltip = 'Missing: ' + missing.join(', ');
-
+  const iconStyle = color === 'yellow' ? 'text-amber-500' : 'text-red-500';
   return (
-    <span title={tooltip} className={`flex-shrink-0 ${styles[color]}`}>
+    <span title={tooltip} className={`flex-shrink-0 ${iconStyle}`}>
       <AlertCircle size={13} />
     </span>
   );
@@ -71,7 +84,14 @@ const PLANTS_SORT_COLS = [
   { value: 'common_name',     label: 'Common Name' },
   { value: 'plant_type',      label: 'Type' },
   { value: 'native_region',   label: 'Region' },
+  { value: 'profile',         label: 'Profile' },
 ];
+
+// 0 = complete, 1 = partial, 2 = missing — ascending puts worst first
+function profileSortVal(plant) {
+  const c = profileCompleteness(plant).color;
+  return c === 'green' ? 0 : c === 'yellow' ? 1 : 2;
+}
 
 function plantsGetVal(plant, col) {
   switch (col) {
@@ -79,6 +99,7 @@ function plantsGetVal(plant, col) {
     case 'common_name':     return (plant.common_name || '').toLowerCase();
     case 'plant_type':      return plant.plant_type || '';
     case 'native_region':   return (plant.native_region || '').toLowerCase();
+    case 'profile':         return profileSortVal(plant);
     default:                return '';
   }
 }
@@ -444,7 +465,6 @@ export default function AdminPlants() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [incompleteOnly, setIncompleteOnly] = useState(false);
   const { sortCol, sortDir, sort2Col, setSort2Col, sort2Dir, setSort2Dir, handleSort } = useMultiSort('scientific_name');
   const [editPlant, setEditPlant] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -493,13 +513,11 @@ export default function AdminPlants() {
 
   const handleSearch = (e) => { setSearch(e.target.value); setPage(1); setSelected(new Set()); };
   const handleType   = (e) => { setTypeFilter(e.target.value); setPage(1); setSelected(new Set()); };
-  const handleIncompleteToggle = () => { setIncompleteOnly(v => !v); setPage(1); setSelected(new Set()); };
 
-  const sortedPlants = useMemo(() => {
-    let list = applyMultiSort(data?.plants ?? [], sortCol, sortDir, sort2Col, sort2Dir, plantsGetVal);
-    if (incompleteOnly) list = list.filter(p => profileCompleteness(p).color !== 'green');
-    return list;
-  }, [data?.plants, sortCol, sortDir, sort2Col, sort2Dir, incompleteOnly]);
+  const sortedPlants = useMemo(
+    () => applyMultiSort(data?.plants ?? [], sortCol, sortDir, sort2Col, sort2Dir, plantsGetVal),
+    [data?.plants, sortCol, sortDir, sort2Col, sort2Dir],
+  );
 
   const toggleSelect = (id) => setSelected(prev => {
     const next = new Set(prev);
@@ -549,18 +567,6 @@ export default function AdminPlants() {
             <option value="">All Types</option>
             {TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t] || t}</option>)}
           </select>
-          <button
-            onClick={handleIncompleteToggle}
-            className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border transition-colors shrink-0 ${
-              incompleteOnly
-                ? 'bg-amber-50 border-amber-400 text-amber-700 font-medium'
-                : 'border-forest-200 text-forest-500 hover:border-forest-400 hover:text-forest-700'
-            }`}
-            title="Show only plants with incomplete profiles"
-          >
-            <AlertCircle size={14} />
-            Incomplete
-          </button>
         </div>
         <MultiSortBar
           columns={PLANTS_SORT_COLS}
@@ -606,6 +612,7 @@ export default function AdminPlants() {
                 <SortHeader label="Common Name" col="common_name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
                 <SortHeader label="Type" col="plant_type" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
                 <SortHeader label="Region" col="native_region" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
+                <SortHeader label="Profile" col="profile" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
                 <th className="px-4 py-3 font-medium text-forest-600 hidden xl:table-cell">Attributes</th>
                 <th className="px-4 py-3 font-medium text-forest-600 text-center">Sizes</th>
                 <th className="px-4 py-3 font-medium text-forest-600 text-center">Active</th>
@@ -615,10 +622,10 @@ export default function AdminPlants() {
             <tbody className="divide-y divide-forest-50">
               {isLoading ? (
                 Array.from({length:10}).map((_,i) => (
-                  <tr key={i}><td colSpan={8} className="px-4 py-3"><div className="h-4 bg-forest-100 rounded animate-pulse w-3/4" /></td></tr>
+                  <tr key={i}><td colSpan={9} className="px-4 py-3"><div className="h-4 bg-forest-100 rounded animate-pulse w-3/4" /></td></tr>
                 ))
               ) : sortedPlants.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-forest-400">No plants found</td></tr>
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-forest-400">No plants found</td></tr>
               ) : sortedPlants.map(plant => (
                 <tr key={plant.id} className={`hover:bg-forest-50/60 transition-colors ${selected.has(plant.id) ? 'bg-forest-50' : ''}`}>
                   <td className="px-3 py-3">
@@ -637,11 +644,8 @@ export default function AdminPlants() {
                         : <div className="w-10 h-10 rounded-lg bg-forest-100 flex-shrink-0 flex items-center justify-center text-forest-300 text-xs">🌿</div>
                       }
                       <div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="font-medium italic text-forest-900">
-                            {plant.scientific_name || <span className="not-italic text-forest-500 text-sm">{plant.common_name}</span>}
-                          </div>
-                          <ProfileBadge plant={plant} />
+                        <div className="font-medium italic text-forest-900">
+                          {plant.scientific_name || <span className="not-italic text-forest-500 text-sm">{plant.common_name}</span>}
                         </div>
                         {plant.scientific_name && (
                           <div className="text-xs text-forest-500">{plant.common_name}</div>
@@ -661,6 +665,10 @@ export default function AdminPlants() {
                   </td>
 
                   <td className="px-4 py-3 hidden lg:table-cell text-forest-600 text-xs">{plant.native_region || '—'}</td>
+
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <ProfileBadge plant={plant} asColumn />
+                  </td>
 
                   <td className="px-4 py-3 hidden xl:table-cell">
                     <div className="flex flex-wrap gap-1">
