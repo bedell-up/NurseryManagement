@@ -43,14 +43,12 @@ async function fetchUsda(q) {
   const profile = profileResp.ok ? await profileResp.json() : plant;
 
   const familyAncestor = (profile.Ancestors || []).find(a => a.Rank === 'Family');
-  const isNativeL48 = (profile.NativeStatuses || []).some(n => n.Region === 'L48' && n.Status === 'N');
 
   return {
     symbol,
     usda_profile_url: `${USDA_PAGE}${symbol}`,
     family: familyAncestor ? stripHtml(familyAncestor.ScientificName) : null,
     plant_type: mapGrowthHabit(profile.GrowthHabits || plant.GrowthHabits),
-    native_region: isNativeL48 ? 'Pacific Northwest' : null,
   };
 }
 
@@ -97,7 +95,6 @@ async function lookup(req, res) {
       species:          gbifData?.species_epithet  || null,
       family:           gbifData?.family           || usdaData?.family || null,
       plant_type:       usdaData?.plant_type       || null,
-      native_region:    usdaData?.native_region    || null,
       usda_profile_url: usdaData?.usda_profile_url || null,
       gbif_url:         gbifData?.gbif_url         || null,
     };
