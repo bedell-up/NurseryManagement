@@ -1,3 +1,6 @@
+const { PnwNative } = require('../models');
+const { Op } = require('sequelize');
+
 const USDA_SEARCH  = 'https://plantsservices.sc.egov.usda.gov/api/PlantSearch';
 const USDA_PROFILE = 'https://plantsservices.sc.egov.usda.gov/api/PlantProfile';
 const USDA_PAGE    = 'https://plants.usda.gov/home/plantProfile?symbol=';
@@ -52,6 +55,24 @@ async function fetchUsda(q) {
   };
 }
 
+// Look up pnw_natives by exact match or genus+species prefix
+async function checkPnwNative(sciName) {
+  if (!sciName) return null;
+  const genusSpecies = sciName.split(' ').slice(0, 2).join(' ');
+
+  const match = await PnwNative.findOne({
+    where: {
+      scientific_name: {
+        [Op.or]: [
+          sciName,          // exact
+          { [Op.like]: `${genusSpecies}%` },  // subspecies / variety variants
+        ],
+      },
+    },
+  });
+  return match;
+}
+
 async function fetchGbif(q) {
   const url = `${GBIF_MATCH}?name=${encodeURIComponent(q)}&rank=SPECIES&kingdom=Plantae`;
   const resp = await fetch(url, { headers: { Accept: 'application/json' } });
@@ -81,22 +102,38 @@ async function lookup(req, res) {
   if (!q) return res.status(400).json({ error: 'q is required' });
 
   try {
-    // Call USDA and GBIF in parallel
-    const [usda, gbif] = await Promise.allSettled([fetchUsda(q), fetchGbif(q)]);
+    // Call USDA, GBIF, and PNW native check in parallel
+    const sciNameForPnw = q; // use the user-entered name for the DB check
+    const [usda, gbif, pnwMatch] = await Promise.allSettled([
+      fetchUsda(q),
+      fetchGbif(q),
+      checkPnwNative(sciNameForPnw),
+    ]);
     const usdaData = usda.status === 'fulfilled' ? usda.value : null;
     const gbifData = gbif.status === 'fulfilled' ? gbif.value : null;
+    const pnwNative = pnwMatch.status === 'fulfilled' ? pnwMatch.value : null;
 
     if (!usdaData && !gbifData) return res.json({ found: false });
 
-    // Merge: GBIF is preferred for taxonomy; USDA for plant_type, native_region, usda_profile_url
+    // Canonical scientific name (prefer GBIF clean name, fall back to user input)
+    const canonicalName = gbifData?.scientific_name || q;
+
+    // Oregon Flora URL — only generated when plant is confirmed PNW native
+    const oregon_flora_url = pnwNative
+      ? `https://oregonflora.org/taxa/index.php?taxon=${encodeURIComponent(canonicalName)}`
+      : null;
+
+    // Merge: GBIF preferred for taxonomy; USDA for plant type; PNW table for native status
     const data = {
-      scientific_name:  gbifData?.scientific_name  || null,
+      scientific_name:  canonicalName,
       genus:            gbifData?.genus            || null,
       species:          gbifData?.species_epithet  || null,
       family:           gbifData?.family           || usdaData?.family || null,
       plant_type:       usdaData?.plant_type       || null,
+      native_region:    pnwNative ? 'Pacific Northwest' : null,
       usda_profile_url: usdaData?.usda_profile_url || null,
       gbif_url:         gbifData?.gbif_url         || null,
+      oregon_flora_url,
     };
 
     // Strip nulls so the form only merges what we actually found
@@ -104,8 +141,10 @@ async function lookup(req, res) {
 
     res.json({
       found: true,
-      usda_symbol:     usdaData?.symbol      || null,
-      gbif_confidence: gbifData?.confidence  || null,
+      is_pnw_native:   !!pnwNative,
+      pnw_data:        pnwNative || null,
+      usda_symbol:     usdaData?.symbol     || null,
+      gbif_confidence: gbifData?.confidence || null,
       data,
     });
   } catch (err) {

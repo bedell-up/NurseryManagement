@@ -29,6 +29,7 @@ const VendorOrder = require('./VendorOrder');
 const VendorOrderItem = require('./VendorOrderItem');
 const PotSizeCost = require('./PotSizeCost');
 const ProductionBatchStage = require('./ProductionBatchStage');
+const PnwNative = require('./PnwNative');
 
 // Plant -> PlantVariant (one plant, many size/container variants)
 Plant.hasMany(PlantVariant, { foreignKey: 'plant_id', as: 'variants' });
@@ -164,4 +165,5 @@ module.exports = {
   LandscapingProjectPlant,
   JobPhoto,
   ProductionBatchStage,
+  PnwNative,
 };

@@ -48,7 +48,7 @@ const EMPTY = {
   is_pet_friendly: null, portland_plant_list: null,
   seeds_per_gram: '',
   bouquet_use: '', landscape_use: '', description: '', notes: '',
-  more_info_url: '', usda_profile_url: '', gbif_url: '', image_url: '',
+  more_info_url: '', usda_profile_url: '', gbif_url: '', oregon_flora_url: '', image_url: '',
   is_active: true, is_featured: false,
 };
 
@@ -174,7 +174,7 @@ export default function PlantForm({ plant, onClose }) {
             next[k] = v;
           }
           // Always take URLs and taxonomy from lookup
-          if (['usda_profile_url', 'gbif_url', 'scientific_name', 'genus', 'species', 'family'].includes(k) && v) {
+          if (['usda_profile_url', 'gbif_url', 'oregon_flora_url', 'scientific_name', 'genus', 'species', 'family'].includes(k) && v) {
             next[k] = v;
           }
         });
@@ -211,7 +211,7 @@ export default function PlantForm({ plant, onClose }) {
     ['plant_type','sun_requirements','water_requirements','native_region','genus','species','cultivar',
      'family','soil_type','bloom_time','bloom_color','hardiness_zone_min','hardiness_zone_max',
      'bouquet_use','landscape_use','description','notes','more_info_url','usda_profile_url',
-     'gbif_url','image_url','plant_code','scientific_name'].forEach(k => {
+     'gbif_url','oregon_flora_url','image_url','plant_code','scientific_name'].forEach(k => {
        if (payload[k] === '') payload[k] = null;
     });
     mutation.mutate(payload);
@@ -366,6 +366,16 @@ export default function PlantForm({ plant, onClose }) {
             <input className="input flex-1" type="url" {...inp('gbif_url')} placeholder="https://www.gbif.org/species/…" />
             {form.gbif_url && (
               <a href={form.gbif_url} target="_blank" rel="noreferrer" className="text-forest-400 hover:text-forest-700 shrink-0" title="Open GBIF species page">
+                <ExternalLink size={15} />
+              </a>
+            )}
+          </div>
+        </Field>
+        <Field label="Oregon Flora URL">
+          <div className="flex gap-1.5 items-center">
+            <input className="input flex-1" type="url" {...inp('oregon_flora_url')} placeholder="Auto-filled for PNW natives" />
+            {form.oregon_flora_url && (
+              <a href={form.oregon_flora_url} target="_blank" rel="noreferrer" className="text-forest-400 hover:text-forest-700 shrink-0" title="Open Oregon Flora page">
                 <ExternalLink size={15} />
               </a>
             )}
