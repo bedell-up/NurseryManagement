@@ -140,7 +140,7 @@ const Plant = sequelize.define('Plant', {
     type: DataTypes.STRING(500),
     allowNull: true,
   },
-  oregon_flora_url: {
+  gbif_url: {
     type: DataTypes.STRING(500),
     allowNull: true,
   },
